@@ -1,0 +1,187 @@
+export enum View {
+  LOGIN = 'LOGIN',
+  SIGNUP = 'SIGNUP',
+  NEWS = 'NEWS',
+  EVENTS = 'EVENTS',
+  SOCIAL = 'SOCIAL',
+  PROFILE = 'PROFILE',
+  MERCADO = 'MERCADO',
+  ADMIN = 'ADMIN',
+  MEDIA_CREATION = 'MEDIA_CREATION',
+  SETTINGS = 'SETTINGS'
+}
+
+export type UserType = 'common' | 'seller' | 'organizer' | 'admin';
+export type UserPermission = 'announce' | 'organize_event';
+export type TrustLevel = 'normal' | 'monitored' | 'restricted';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  state_id: string;
+  city_id: string;
+  type: UserType;
+  role: 'USER' | 'ADMIN';
+  permissions: UserPermission[];
+  trustLevel: TrustLevel;
+  blocked: boolean;
+  avatar_url?: string;
+  isMaster?: boolean;
+  bio?: string;
+  createdAt: string;
+  stats?: {
+    adsCount: number;
+    eventsCount: number;
+    complaintsReceived: number;
+  };
+}
+
+export type AdStatus = 'active' | 'paused' | 'blocked' | 'sold';
+
+export interface Advertisement {
+  id: string;
+  title: string;
+  price: string;
+  imageUrl: string;
+  category: string;
+  location: string;
+  userId: string;
+  status: AdStatus;
+  isSponsored: boolean;
+  isPinned: boolean;
+  createdAt: string;
+  views: number;
+  complaints?: number;
+}
+
+export type ComplaintReason = 'spam' | 'inappropriate' | 'fraud' | 'other';
+export type ComplaintStatus = 'pending' | 'resolved' | 'ignored';
+
+export interface Complaint {
+  id: string;
+  targetId: string; // ID of Ad, Event, or User
+  targetType: 'ad' | 'event' | 'user' | 'post';
+  reporterId: string;
+  reason: ComplaintReason;
+  description?: string;
+  status: ComplaintStatus;
+  createdAt: string;
+}
+
+export type CommunicationPriority = 'normal' | 'important' | 'urgent';
+
+export interface Communication {
+  id: string;
+  title: string;
+  content: string;
+  priority: CommunicationPriority;
+  isPinned: boolean;
+  scheduledFor?: string;
+  createdAt: string;
+  active: boolean;
+}
+
+export interface Sponsor {
+  id: string;
+  name: string;
+  logoUrl: string;
+  externalLink?: string;
+  placement: ('home' | 'market' | 'events' | 'arena')[];
+  active: boolean;
+  isMaster: boolean;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  activeEvents: number;
+  activeAds: number;
+  pendingComplaints: number;
+  activeCommunications: number;
+  activeSponsors: number;
+  revenue: string;
+}
+
+export interface NewsItem {
+  id: string;
+  tag: string;
+  title: string;
+  description: string;
+  date: string;
+  type: 'urgent' | 'official' | 'info';
+}
+
+export interface EventItem {
+  id: string;
+  title: string;
+  location: string;
+  park: string;
+  price: string;
+  category: string;
+  date: {
+    month: string;
+    day: string;
+  };
+  imageUrl: string;
+  site?: string;
+  instagram?: string;
+  phone?: string;
+  prizes?: string;
+  description?: string;
+  isHighlight?: boolean;
+  isPaused?: boolean;
+  lat?: number;
+  lng?: number;
+}
+
+export interface PostItem {
+  id: string;
+  userId: string;
+  username: string;
+  isVerified: boolean;
+  location: string;
+  imageUrl: string;
+  likes: number;
+  comments: number;
+  caption: string;
+  hashtags: string[];
+  timeAgo: string;
+  isFeature?: boolean;
+  views?: string;
+  isShadowbanned?: boolean;
+  lat?: number;
+  lng?: number;
+}
+
+export interface PostLike {
+  id: string;
+  postId: string;
+  userId: string;
+}
+
+export interface PostFavorite {
+  id: string;
+  postId: string;
+  userId: string;
+}
+
+export interface PostComment {
+  id: string;
+  postId: string;
+  userId: string;
+  username: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface StoryItem {
+  id: string;
+  username: string;
+  imageUrl: string; // Avatar
+  mediaUrl?: string; // Content
+  mediaType?: 'image' | 'video';
+  hasNew?: boolean;
+}
