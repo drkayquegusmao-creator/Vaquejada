@@ -25,6 +25,7 @@ const MarketView: React.FC = () => {
         return saved ? JSON.parse(saved) : [];
     });
     const [adIndex, setAdIndex] = useState(0);
+    const [publishedAds, setPublishedAds] = useState<any[]>([]);
 
     useEffect(() => {
         localStorage.setItem('arena_market_favorites', JSON.stringify(favorites));
@@ -41,6 +42,10 @@ const MarketView: React.FC = () => {
         setFavorites(prev =>
             prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
         );
+    };
+
+    const navigateToProfile = (username: string) => {
+        window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'PROFILE', username } }));
     };
 
     // Form State
@@ -111,6 +116,16 @@ const MarketView: React.FC = () => {
     };
 
     const publishAd = () => {
+        const newAd = {
+            title: adData.title || 'Anúncio Sem Título',
+            price: adData.priceType === 'negotiable' ? 'A COMBINAR' : `R$ ${adData.price}`,
+            loc: `${adData.city || 'Cidade'}, ${adData.uf || 'UF'}`,
+            img: adData.photos[0] || 'https://picsum.photos/seed/novo_anuncio/400',
+            isNew: adData.condition === 'NOVO',
+            description: adData.description,
+            category: adData.category
+        };
+        setPublishedAds(prev => [newAd, ...prev]);
         setShowConfirm(false);
         setShowSuccess(true);
     };
@@ -160,18 +175,18 @@ const MarketView: React.FC = () => {
                         {/* Seller Info */}
                         <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#1A1108]/5 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-neutral-200 overflow-hidden border border-[#D4AF37]/30">
+                                <div onClick={() => navigateToProfile('joao_vendedor')} className="w-10 h-10 rounded-full bg-neutral-200 overflow-hidden border border-[#D4AF37]/30 cursor-pointer active:scale-95 transition-transform">
                                     <img src="https://picsum.photos/seed/seller/100" className="w-full h-full object-cover" />
                                 </div>
                                 <div>
-                                    <p className="text-[11px] font-black uppercase text-[#1A1108] tracking-wide">João Vendedor</p>
+                                    <p onClick={() => navigateToProfile('joao_vendedor')} className="text-[11px] font-black uppercase text-[#1A1108] tracking-wide cursor-pointer hover:underline">João Vendedor</p>
                                     <div className="flex items-center gap-1">
                                         <span className="material-icons text-[10px] text-green-500">verified</span>
                                         <p className="text-[9px] font-bold text-[#1A1108]/40">Identidade verificada</p>
                                     </div>
                                 </div>
                             </div>
-                            <button className="text-[10px] font-black text-[#1A1108]/40 uppercase tracking-widest border border-[#1A1108]/10 px-3 py-1.5 rounded-lg">Ver Perfil</button>
+                            <button onClick={() => navigateToProfile('joao_vendedor')} className="text-[10px] font-black text-[#1A1108]/40 uppercase tracking-widest border border-[#1A1108]/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform hover:bg-black/5">Ver Perfil</button>
                         </div>
 
                         {/* Details Grid */}
@@ -571,6 +586,7 @@ const MarketView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                     {/* Ad Cards */}
                     {[
+                        ...publishedAds,
                         { title: 'SELA PROFISSIONAL LUXO', price: 'R$ 1.500', loc: 'CG, PB', img: 'https://picsum.photos/seed/sela/400', isNew: true },
                         { title: 'CAMINHÃO REBOQUE 2024', price: 'R$ 85.000', loc: 'JP, PB', img: 'https://picsum.photos/seed/truck/400', isNew: true },
                         { title: 'CAVALO QUARTO DE MILHA', price: 'A COMBINAR', loc: 'CE, PE', img: 'https://picsum.photos/seed/horse/400', isNew: false },

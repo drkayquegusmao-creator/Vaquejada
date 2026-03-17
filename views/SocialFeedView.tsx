@@ -13,6 +13,7 @@ const stories: StoryItem[] = [
 const INITIAL_POSTS: PostItem[] = [
   {
     id: '1',
+    userId: 'mock-user-1',
     username: 'joao_vaquejada',
     isVerified: true,
     location: 'PARQUE DAS PALMEIRAS • SE',
@@ -26,6 +27,7 @@ const INITIAL_POSTS: PostItem[] = [
   },
   {
     id: '2',
+    userId: 'mock-user-2',
     username: 'ana_montaria',
     isVerified: false,
     location: 'CIRCUITO NORDESTINO',
@@ -48,6 +50,12 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set(['1']));
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [storyProgress, setStoryProgress] = useState(0);
+
+  const navigateToProfile = (username: string) => {
+    // format username by removing @
+    const formatted = username.startsWith('@') ? username.substring(1) : username;
+    window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'PROFILE', username: formatted } }));
+  };
 
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -140,7 +148,10 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                   </div>
                 )}
               </div>
-              <span className={`text-[10px] font-bold tracking-tight ${story.hasNew ? 'text-white' : 'opacity-40 text-white'}`}>
+              <span 
+                onClick={() => navigateToProfile(story.username)}
+                className={`text-[10px] font-bold tracking-tight cursor-pointer hover:underline ${story.hasNew ? 'text-white' : 'opacity-40 text-white'}`}
+              >
                 {story.username}
               </span>
             </div>
@@ -155,11 +166,14 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
             {/* Post Header */}
             <div className="px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full border border-[#ECA413]/30 p-0.5">
+                <div 
+                   onClick={() => navigateToProfile(post.username)}
+                   className="w-10 h-10 rounded-full border border-[#ECA413]/30 p-0.5 cursor-pointer active:scale-95 transition-transform"
+                >
                   <img className="w-full h-full object-cover rounded-full bg-neutral-800" src={`https://picsum.photos/seed/${post.username}/100`} alt={post.username} />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navigateToProfile(post.username)}>
                     <span className="font-black text-[13px] text-white tracking-tight">{post.username}</span>
                     {post.isVerified && <span className="material-icons text-[#ECA413] text-[14px]">verified</span>}
                   </div>
@@ -241,7 +255,12 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                 ))}
               </div>
               <p className="text-[13.5px] leading-snug">
-                <span className="font-black mr-2 text-white">{post.username}</span>
+                <span 
+                  className="font-black mr-2 text-white cursor-pointer hover:underline"
+                  onClick={() => navigateToProfile(post.username)}
+                >
+                  {post.username}
+                </span>
                 <span className="text-white/90 font-medium">{post.caption}</span>
               </p>
               <button
@@ -279,7 +298,13 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
               <div className="w-8 h-8 rounded-full border border-white/20 p-0.5">
                 <img className="w-full h-full object-cover rounded-full" src={stories[activeStoryIndex].imageUrl} alt="" />
               </div>
-              <span className="text-white text-xs font-black uppercase tracking-widest drop-shadow-md">
+              <span 
+                  onClick={() => {
+                    setActiveStoryIndex(null);
+                    navigateToProfile(stories[activeStoryIndex].username);
+                  }}
+                  className="text-white text-xs font-black uppercase tracking-widest drop-shadow-md cursor-pointer hover:underline"
+                >
                 {stories[activeStoryIndex].username}
               </span>
             </div>

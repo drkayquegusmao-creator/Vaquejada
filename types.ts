@@ -12,6 +12,19 @@ export enum View {
 }
 
 export type UserType = 'common' | 'seller' | 'organizer' | 'admin';
+
+export interface Circuito {
+  id: string;
+  nome: string;
+  slug: string;
+  descricao?: string;
+  ativo: boolean;
+  destaque?: boolean;
+  ordem: number;
+  imagemCapa?: string | null;
+  corEtiqueta?: string | null;
+}
+
 export type UserPermission = 'announce' | 'organize_event';
 export type TrustLevel = 'normal' | 'monitored' | 'restricted';
 
@@ -27,6 +40,7 @@ export interface User {
   permissions: UserPermission[];
   trustLevel: TrustLevel;
   blocked: boolean;
+  username?: string;
   avatar_url?: string;
   isMaster?: boolean;
   bio?: string;
@@ -135,6 +149,7 @@ export interface EventItem {
   isPaused?: boolean;
   lat?: number;
   lng?: number;
+  circuitoId?: string | null;
 }
 
 export interface PostItem {
@@ -144,7 +159,7 @@ export interface PostItem {
   isVerified: boolean;
   location: string;
   imageUrl: string;
-  likes: number;
+  likes: number | string;
   comments: number;
   caption: string;
   hashtags: string[];

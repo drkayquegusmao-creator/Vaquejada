@@ -6,12 +6,18 @@ import {
     Advertisement,
     Communication,
     Sponsor,
-    PostItem
+    PostItem,
+    Circuito
 } from '../types';
 
-type AdminModule = 'DASHBOARD' | 'EVENTS' | 'ADS' | 'USERS' | 'COMMUNICATIONS' | 'SOCIAL' | 'SPONSORS' | 'NOTIFICATIONS' | 'SETTINGS';
+type AdminModule = 'DASHBOARD' | 'EVENTS' | 'CIRCUITOS' | 'ADS' | 'USERS' | 'COMMUNICATIONS' | 'SOCIAL' | 'SPONSORS' | 'NOTIFICATIONS' | 'SETTINGS';
 
 // Mock Data
+const MOCK_CIRCUITOS: Circuito[] = [
+    { id: '1', nome: 'Portal Vaquejada', slug: 'portal', ativo: true, destaque: true, ordem: 1 },
+    { id: '2', nome: 'Estrelas do Brejo', slug: 'estrelas-brejo', ativo: true, destaque: false, ordem: 2 },
+];
+
 const MOCK_STATS: AdminStats = {
     totalUsers: 12543,
     activeEvents: 8,
@@ -34,6 +40,12 @@ const AdminView: React.FC = () => {
     const [activeModule, setActiveModule] = useState<AdminModule>('DASHBOARD');
     const [editingEvent, setEditingEvent] = useState<Partial<EventItem> | null>(null);
     const [isEventFormOpen, setIsEventFormOpen] = useState(false);
+    
+    // Circuitos state
+    const [circuitos, setCircuitos] = useState<Circuito[]>(MOCK_CIRCUITOS);
+    const [editingCircuit, setEditingCircuit] = useState<Partial<Circuito> | null>(null);
+    const [isCircuitFormOpen, setIsCircuitFormOpen] = useState(false);
+
     const [users, setUsers] = useState<User[]>(MOCK_USERS);
     const [searchUser, setSearchUser] = useState('');
 
@@ -42,6 +54,13 @@ const AdminView: React.FC = () => {
         alert('Vaquejada salva com sucesso! (Simulação)');
         setIsEventFormOpen(false);
         setEditingEvent(null);
+    };
+
+    const handleSaveCircuit = (e: React.FormEvent) => {
+        e.preventDefault();
+        alert('Circuito salvo com sucesso!');
+        setIsCircuitFormOpen(false);
+        setEditingCircuit(null);
     };
 
     const toggleAdminRole = (userId: string) => {
@@ -73,7 +92,7 @@ const AdminView: React.FC = () => {
     };
 
     const renderEventForm = () => (
-        <div className="pb-24 animate-in slide-in-from-bottom duration-300">
+        <div className="pb-48 animate-in slide-in-from-bottom duration-300">
             <header className="flex items-center gap-4 mb-6">
                 <button onClick={() => { setIsEventFormOpen(false); setEditingEvent(null); }} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center active:scale-95 transition-transform">
                     <span className="material-icons text-white">close</span>
@@ -183,8 +202,77 @@ const AdminView: React.FC = () => {
         </div>
     );
 
+    const renderCircuitForm = () => (
+        <div className="pb-48 animate-in slide-in-from-bottom duration-300">
+            <header className="flex items-center gap-4 mb-6">
+                <button type="button" onClick={() => { setIsCircuitFormOpen(false); setEditingCircuit(null); }} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center active:scale-95 transition-transform">
+                    <span className="material-icons text-white">close</span>
+                </button>
+                <div>
+                    <h1 className="text-xl font-black text-white uppercase italic tracking-tight">{editingCircuit?.id ? 'Editar Circuito' : 'Novo Circuito'}</h1>
+                    <p className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-widest">Preencha os dados oficiais</p>
+                </div>
+            </header>
+
+            <form className="space-y-6" onSubmit={handleSaveCircuit}>
+                <div className="space-y-4 bg-white/5 p-6 rounded-2xl border border-white/10">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Nome do Circuito</label>
+                        <input
+                            type="text"
+                            required
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:border-[#D4AF37] outline-none font-bold"
+                            placeholder="Ex: Portal Vaquejada"
+                            defaultValue={editingCircuit?.nome}
+                            onChange={(e) => setEditingCircuit({ ...editingCircuit, nome: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Slug (URL)</label>
+                        <input
+                            type="text"
+                            required
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:border-[#D4AF37] outline-none lowercase"
+                            placeholder="ex: portal-vaquejada"
+                            defaultValue={editingCircuit?.slug}
+                            onChange={(e) => setEditingCircuit({ ...editingCircuit, slug: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-white/10">
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="activeCircuit"
+                                defaultChecked={editingCircuit?.id ? editingCircuit.ativo : true}
+                                onChange={(e) => setEditingCircuit({ ...editingCircuit, ativo: e.target.checked })}
+                                className="w-5 h-5 accent-[#D4AF37] bg-white/5 border-white/10 rounded"
+                            />
+                            <label htmlFor="activeCircuit" className="text-sm text-white font-bold select-none cursor-pointer">Circuito Ativo</label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="highlightCircuit"
+                                defaultChecked={editingCircuit?.destaque}
+                                onChange={(e) => setEditingCircuit({ ...editingCircuit, destaque: e.target.checked })}
+                                className="w-5 h-5 accent-[#D4AF37] bg-white/5 border-white/10 rounded"
+                            />
+                            <label htmlFor="highlightCircuit" className="text-sm text-[#D4AF37] font-bold select-none cursor-pointer">Destacar Circuito</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" className="w-full bg-[#D4AF37] text-background-dark font-black py-4 rounded-xl uppercase tracking-widest mt-6 shadow-lg shadow-[#D4AF37]/20 active:scale-95 transition-transform">
+                    Salvar Circuito
+                </button>
+            </form>
+        </div>
+    );
+
     const renderDashboard = () => (
-        <div className="space-y-6 pb-24">
+        <div className="space-y-6 pb-48">
             <header className="mb-6">
                 <h1 className="text-3xl font-black text-[#D4AF37] uppercase italic tracking-tighter">Painel Admin</h1>
                 <p className="text-white/40 text-xs font-medium uppercase tracking-widest">Gestão da Arena Digital</p>
@@ -208,6 +296,13 @@ const AdminView: React.FC = () => {
                     </div>
                     <p className="text-2xl font-black text-white">{MOCK_STATS.activeEvents}</p>
                     <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Vaquejadas</p>
+                </div>
+                <div onClick={() => setActiveModule('CIRCUITOS')} className="bg-white/5 border border-white/10 p-4 rounded-2xl active:scale-95 transition-transform cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                        <span className="material-icons text-emerald-400">route</span>
+                    </div>
+                    <p className="text-2xl font-black text-white">{circuitos.length}</p>
+                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Circuitos</p>
                 </div>
                 <div onClick={() => setActiveModule('ADS')} className="bg-white/5 border border-white/10 p-4 rounded-2xl active:scale-95 transition-transform cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
@@ -282,7 +377,7 @@ const AdminView: React.FC = () => {
             case 'EVENTS':
                 if (isEventFormOpen) return renderEventForm();
                 return (
-                    <div className="pb-24">
+                    <div className="pb-48">
                         {renderModuleHeader('Gestão de Vaquejadas', 'emoji_events')}
                         <div className="grid grid-cols-2 gap-3 mb-6">
                             <button onClick={() => { setEditingEvent({}); setIsEventFormOpen(true); }} className="bg-[#D4AF37] text-background-dark p-4 rounded-xl font-black uppercase tracking-widest text-xs flex flex-col items-center gap-2 active:scale-95 transition-transform">
@@ -316,9 +411,49 @@ const AdminView: React.FC = () => {
                         </div>
                     </div>
                 );
+            case 'CIRCUITOS':
+                if (isCircuitFormOpen) return renderCircuitForm();
+                return (
+                    <div className="pb-48">
+                        {renderModuleHeader('Gestão de Circuitos', 'route')}
+                        <div className="mb-6">
+                            <button onClick={() => { setEditingCircuit({}); setIsCircuitFormOpen(true); }} className="w-full bg-[#D4AF37] text-background-dark p-4 rounded-xl font-black uppercase tracking-widest text-xs flex mt-4 items-center justify-center gap-2 active:scale-95 transition-transform">
+                                <span className="material-icons">add_circle</span>
+                                Adicionar Novo Circuito
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 px-1">Circuitos Cadastrados</h3>
+                            {circuitos.map(c => (
+                                <div key={c.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex justify-between items-center group">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-bold text-white">{c.nome}</h4>
+                                            {c.destaque && <span className="text-[8px] bg-[#D4AF37] text-background-dark px-1.5 py-0.5 rounded font-black uppercase">Destaque</span>}
+                                        </div>
+                                        <p className="text-[10px] text-white/40 font-medium pb-2 text-emerald-400">/{c.slug}</p>
+                                        <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${c.ativo ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-500'}`}>
+                                            {c.ativo ? 'Ativo' : 'Inativo'}
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingCircuit(c); setIsCircuitFormOpen(true); }} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10 hover:bg-[#D4AF37] hover:text-black transition-colors">
+                                            <span className="material-icons text-sm">edit</span>
+                                        </button>
+                                        <button onClick={() => {
+                                            if (confirm(`Deseja remover o circuito ${c.nome}?`)) setCircuitos(prev => prev.filter(item => item.id !== c.id));
+                                        }} className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors">
+                                            <span className="material-icons text-sm">delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
             case 'ADS':
                 return (
-                    <div className="pb-24">
+                    <div className="pb-48">
                         {renderModuleHeader('Gestão de Anúncios', 'storefront')}
                         <div className="flex gap-2 overflow-x-auto hide-scrollbar mb-6 pb-2">
                             {['Todos', 'Denunciados', 'Patrocinados', 'Pausados'].map(filter => (
@@ -363,7 +498,7 @@ const AdminView: React.FC = () => {
                 );
 
                 return (
-                    <div className="pb-24">
+                    <div className="pb-48">
                         {renderModuleHeader('Gestão de Usuários', 'group')}
                         <div className="relative mb-6">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 material-icons text-white/30">search</span>
@@ -429,11 +564,13 @@ const AdminView: React.FC = () => {
 
             {/* Bottom Navigation for Admin */}
             {activeModule === 'DASHBOARD' && (
-                <div className="absolute bottom-6 left-4 right-4 bg-neutral-900/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 shadow-2xl flex justify-between overflow-x-auto hide-scrollbar gap-1 z-[60]">
+                <div className="fixed bottom-28 left-4 right-4 max-w-4xl mx-auto bg-neutral-900/90 backdrop-blur-md border border-white/10 rounded-2xl p-2 shadow-2xl flex justify-between overflow-x-auto hide-scrollbar gap-1 z-[60]">
                     {[
                         { id: 'EVENTS', icon: 'emoji_events', label: 'Eventos' },
+                        { id: 'CIRCUITOS', icon: 'route', label: 'Circuitos' },
                         { id: 'ADS', icon: 'storefront', label: 'Anúncios' },
                         { id: 'USERS', icon: 'group', label: 'Usuários' },
+
                         { id: 'SOCIAL', icon: 'thumb_up', label: 'Social' },
                         { id: 'SPONSORS', icon: 'paid', label: 'Patrocínio' },
                         { id: 'SETTINGS', icon: 'settings', label: 'Config' },

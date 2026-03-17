@@ -1,13 +1,12 @@
-
 import React from 'react';
-import { NewsItem } from '../types';
+import { NewsItem, User } from '../types';
 
-const news: NewsItem[] = [
+const INITIAL_NEWS: NewsItem[] = [
   {
     id: '1',
     tag: 'OFICIAL',
     title: 'ALTERAÇÃO DE DATA: GRANDE PRÊMIO PORTAL',
-    description: 'Devido às condições climáticas severas, a etapa final do GP Portal foi reprogramada para o próximo final de semana. Fique atento aos novos horários de pesagem.',
+    description: 'Devido às condições climáticas severas, a etapa final do GP Portal foi reprogramada para o próximo final de semana. Fique atento aos novos horários de pesagem. Recomendamos que todos os participantes que já garantiram suas senhas verifiquem o novo cronograma disponível na aba EVENTOS. A equipe de apoio estará disponível 24h para dúvidas e assistência no novo prazo estipulado.',
     date: '14 MAI, 2024 • 09:15',
     type: 'official'
   },
@@ -15,21 +14,198 @@ const news: NewsItem[] = [
     id: '2',
     tag: 'OFICIAL',
     title: 'NOVO REGULAMENTO VETERINÁRIO 2024',
-    description: 'Atualizamos as diretrizes de bem-estar animal para a temporada. A apresentação da GTA e exames de Anemia/Mormo agora é 100% digital via App.',
+    description: 'Atualizamos as diretrizes de bem-estar animal para a temporada. A apresentação da GTA e exames de Anemia/Mormo agora é 100% digital via App. Não será mais suportado a entrega física no ato do evento, todos precisam subir os exames PDF pelo próprio perfil ou durante o processo de inscrição do animal na vaquejada.',
     date: '12 MAI, 2024 • 14:40',
     type: 'official'
   },
   {
     id: '3',
-    tag: 'OFICIAL',
+    tag: 'EVENTO',
     title: 'INSCRIÇÕES ABERTAS: PARQUE DAS PALMEIRAS',
-    description: 'Garanta sua senha antecipada para o maior evento do mês. Lotes promocionais disponíveis para as categorias Profissional e Amador.',
+    description: 'Garanta sua senha antecipada para o maior evento do mês. Lotes promocionais disponíveis para as categorias Profissional e Amador. Lembrando que a prioridade é por ordem de pagamento digital efetuado na plataforma. Boa sorte a todos os competidores!',
     date: '10 MAI, 2024 • 11:20',
     type: 'official'
   }
 ];
 
-const NewsView: React.FC = () => {
+const TABS = ['TUDO', 'EVENTOS', 'REGULAMENTO', 'NOTÍCIAS'];
+
+interface NewsViewProps {
+    user?: User | null;
+}
+
+const NewsView: React.FC<NewsViewProps> = ({ user }) => {
+  const [localNews, setLocalNews] = React.useState<NewsItem[]>(INITIAL_NEWS);
+  const [activeTab, setActiveTab] = React.useState('TUDO');
+  
+  const [selectedNews, setSelectedNews] = React.useState<NewsItem | null>(null);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editingItem, setEditingItem] = React.useState<Partial<NewsItem>>({});
+
+  const filteredNews = React.useMemo(() => {
+    if (activeTab === 'TUDO') return localNews;
+    if (activeTab === 'EVENTOS') return localNews.filter(n => n.tag === 'EVENTO' || n.title.includes('EVENTO'));
+    if (activeTab === 'REGULAMENTO') return localNews.filter(n => n.title.includes('REGULAMENTO'));
+    return localNews.filter(n => n.type === 'official' && !n.title.includes('REGULAMENTO') && n.tag !== 'EVENTO');
+  }, [activeTab, localNews]);
+
+  const handleSaveNews = (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      const newNews: NewsItem = {
+          id: editingItem.id || Date.now().toString(),
+          title: editingItem.title || 'Nova Notícia',
+          description: editingItem.description || '',
+          tag: editingItem.tag || 'NOTÍCIA',
+          date: editingItem.date || new Date().toLocaleString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(' de ', ' ').toUpperCase(),
+          type: editingItem.type || 'official'
+      };
+
+      if (editingItem.id) {
+          setLocalNews(prev => prev.map(n => n.id === newNews.id ? newNews : n));
+      } else {
+          setLocalNews(prev => [newNews, ...prev]);
+      }
+      setIsEditing(false);
+      setEditingItem({});
+      alert('Notícia salva com sucesso!');
+  };
+
+  const handleDeleteNews = (id: string) => {
+      if (window.confirm("Certeza que deseja apagar esta notícia?")) {
+          setLocalNews(prev => prev.filter(n => n.id !== id));
+          setSelectedNews(null);
+      }
+  };
+
+  // ---- EDITOR MODE ----
+  if (isEditing) {
+      return (
+          <div className="p-6 pb-48 animate-in slide-in-from-bottom duration-300">
+              <header className="flex items-center gap-4 mb-8">
+                  <button onClick={() => { setIsEditing(false); setEditingItem({}); }} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center active:scale-95 transition-transform shrink-0">
+                      <span className="material-icons text-white">close</span>
+                  </button>
+                  <div>
+                      <h1 className="text-xl font-black text-white uppercase italic tracking-tight">{editingItem.id ? 'Editar Notícia' : 'Nova Notícia'}</h1>
+                      <p className="text-[10px] text-primary-orange font-bold uppercase tracking-widest">Painel Administrativo</p>
+                  </div>
+              </header>
+
+              <form onSubmit={handleSaveNews} className="space-y-6 bg-white/5 p-6 rounded-2xl border border-white/10">
+                  <div className="space-y-1">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Título da Notícia</label>
+                      <input 
+                          type="text" 
+                          required 
+                          className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:border-primary-orange outline-none font-bold" 
+                          placeholder="Digite o título principal..." 
+                          value={editingItem.title || ''}
+                          onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                      />
+                  </div>
+                  
+                  <div className="space-y-1">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Tag / Categoria</label>
+                      <input 
+                          type="text" 
+                          required 
+                          className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:border-primary-orange outline-none uppercase" 
+                          placeholder="EX: URGENTE, OFICIAL, EVENTO" 
+                          value={editingItem.tag || ''}
+                          onChange={(e) => setEditingItem({ ...editingItem, tag: e.target.value.toUpperCase() })}
+                      />
+                  </div>
+
+                  <div className="space-y-1">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Corpo da Notícia</label>
+                      <textarea 
+                          required
+                          rows={6}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:border-primary-orange outline-none resize-none" 
+                          placeholder="Digite o conteúdo completo da notícia..." 
+                          value={editingItem.description || ''}
+                          onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                      ></textarea>
+                  </div>
+
+                  <button type="submit" className="w-full bg-primary-orange text-white font-black py-4 rounded-xl uppercase tracking-widest mt-6 shadow-lg shadow-primary-orange/20 active:scale-95 transition-transform">
+                      Publicar Notícia
+                  </button>
+              </form>
+          </div>
+      );
+  }
+
+  // ---- READING MODE ----
+  if (selectedNews) {
+      return (
+          <div className="min-h-[100vh] bg-[#F5F1E9] p-6 pb-48 animate-in slide-in-from-right duration-300 relative z-[50] -m-6 rounded-xl">
+              <header className="flex justify-between items-center mb-8 pt-6">
+                  <button onClick={() => setSelectedNews(null)} className="w-10 h-10 rounded-full bg-[#1A1108]/10 flex items-center justify-center border border-[#1A1108]/20 active:scale-95 transition-transform">
+                      <span className="material-icons text-[#1A1108]">arrow_back</span>
+                  </button>
+                  <div className="flex gap-2">
+                       {user?.role === 'ADMIN' && (
+                           <>
+                             <button onClick={() => { setEditingItem(selectedNews); setIsEditing(true); setSelectedNews(null); }} className="w-10 h-10 rounded-full bg-[#1A1108] text-white flex items-center justify-center active:scale-95 transition-transform shadow-xl">
+                                <span className="material-icons text-sm">edit</span>
+                             </button>
+                             <button onClick={() => handleDeleteNews(selectedNews.id)} className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center active:scale-95 transition-transform shadow-xl">
+                                <span className="material-icons text-sm">delete</span>
+                             </button>
+                           </>
+                       )}
+                  </div>
+              </header>
+
+              <article className="max-w-xl mx-auto">
+                  <div className="mb-6 flex items-center justify-between">
+                     <span className="bg-[#ECA413] text-white text-[10px] font-black px-3 py-1.5 rounded flex items-center gap-1 shadow-md shadow-[#ECA413]/20">
+                       <span className="material-icons text-[12px]">verified</span> {selectedNews.tag}
+                     </span>
+                     <span className="text-xs text-[#1A1108]/60 font-bold">{selectedNews.date}</span>
+                  </div>
+
+                  <h1 className="text-4xl font-black text-[#1A1108] uppercase leading-none font-display mb-6">
+                      {selectedNews.title}
+                  </h1>
+
+                  <div className="w-12 h-1 bg-[#ECA413] mb-8 rounded-full"></div>
+
+                  <div className="w-full text-[#1A1108]/80 font-medium leading-relaxed text-base space-y-6">
+                      <p>{selectedNews.description}</p>
+                      <p className="p-4 bg-white/80 border border-[#1A1108]/10 rounded-xl text-sm shadow-sm mt-8 text-[#1A1108]">
+                        <b className="text-[#1A1108]">Aviso Informativo:</b> Recomendamos sempre verificar fontes oficiais no portal web caso ainda haja dúvidas e ler atentamente as instruções anexas se existirem nesta página de comunicações!
+                      </p>
+                  </div>
+                  
+                  {/* Fake Attachments simulation */}
+                  {(selectedNews.id === '2' || selectedNews.id === '3' || selectedNews.tag === 'URGENTE') && (
+                      <div className="mt-12 bg-[#1A1108]/5 border border-[#1A1108]/10 rounded-2xl p-6">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1A1108]/40 mb-4">Anexos da Notícia</h4>
+                          <div className="space-y-3">
+                              <button onClick={() => alert('Baixando PDF...')} className="w-full bg-white border border-[#1A1108]/10 p-4 rounded-xl flex items-center justify-between group active:scale-95 transition-transform shadow-sm">
+                                  <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center shrink-0">
+                                          <span className="material-icons text-red-500">picture_as_pdf</span>
+                                      </div>
+                                      <div className="text-left flex-1 min-w-0 pr-3 text-[#1A1108]">
+                                          <p className="text-sm font-bold truncate">Documento Oficial.pdf</p>
+                                          <p className="text-[10px] opacity-60 font-bold">3.2 MB</p>
+                                      </div>
+                                  </div>
+                                  <span className="material-icons text-[#1A1108]/20 group-hover:text-[#ECA413] transition-colors shrink-0">download</span>
+                              </button>
+                          </div>
+                      </div>
+                  )}
+              </article>
+          </div>
+      );
+  }
+
+  // ---- LIST MODE ----
   return (
     <div className="p-6 pb-24">
       <header className="mb-8">
@@ -39,45 +215,75 @@ const NewsView: React.FC = () => {
             <h1 className="text-3xl font-black uppercase text-primary font-display">+VAQUEJADA</h1>
           </div>
           <div className="flex gap-2">
-            <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+            <button
+                onClick={() => alert('Buscando notícias...')}
+                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 active:scale-95 transition-transform"
+            >
               <span className="material-icons text-xl">search</span>
             </button>
-            <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+            <button
+                onClick={() => alert('Abrindo painel de notificações...')}
+                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 active:scale-95 transition-transform"
+            >
               <span className="material-icons text-xl">notifications</span>
             </button>
           </div>
         </div>
 
         <div className="flex gap-2 mb-8 overflow-x-auto hide-scrollbar">
-          {['TUDO', 'EVENTOS', 'REGULAMENTO', 'NOTÍCIAS'].map((tab, idx) => (
-            <button key={tab} className={`px-6 py-2 rounded-full font-bold text-xs whitespace-nowrap border-2 ${idx === 0 ? 'bg-primary-orange border-primary-orange text-white' : 'border-white/10 text-white/40'}`}>
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-2 rounded-full font-bold text-xs whitespace-nowrap border-2 transition-colors active:scale-95 ${activeTab === tab ? 'bg-primary-orange border-primary-orange text-white' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
+            >
               {tab}
             </button>
           ))}
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-4xl font-black text-primary-orange uppercase leading-none mb-2 font-display tracking-tight">ARENA NOTÍCIAS</h2>
-          <p className="text-white/40 text-sm">O seu canal oficial de informações</p>
+        <div className="mb-8 flex flex-col sm:flex-row justify-between sm:items-end gap-4">
+          <div>
+            <h2 className="text-4xl font-black text-primary-orange uppercase leading-none mb-2 font-display tracking-tight">ARENA NOTÍCIAS</h2>
+            <p className="text-white/40 text-sm">O seu canal oficial de informações</p>
+          </div>
+          {user?.role === 'ADMIN' && (
+            <button
+               onClick={() => {
+                 setEditingItem({});
+                 setIsEditing(true);
+               }}
+               className="bg-primary-orange text-white px-4 py-3 rounded-xl font-black uppercase text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform w-max shadow-lg shadow-primary-orange/20"
+            >
+               <span className="material-icons text-sm">add_circle</span>
+               Nova Notícia
+            </button>
+          )}
         </div>
       </header>
 
       <div className="space-y-6">
-        {news.map((item) => (
-          <div key={item.id} className="bg-sand-light rounded-2xl overflow-hidden shadow-2xl border border-white/10 group active:scale-[0.98] transition-all">
+        {filteredNews.length === 0 ? (
+          <div className="text-center text-white/40 py-10 border border-white/10 border-dashed rounded-2xl">
+             <span className="material-icons text-4xl mb-2 opacity-50">article</span>
+             <p className="text-sm font-bold uppercase tracking-widest">Nenhuma notícia encontrada.</p>
+          </div>
+        ) : (
+          filteredNews.map((item) => (
+            <div key={item.id} className="bg-sand-light rounded-2xl overflow-hidden shadow-2xl border border-white/10 group active:scale-[0.98] transition-all">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <span className="bg-leather text-white text-[10px] font-black px-3 py-1 rounded flex items-center gap-1">
+                <span className="bg-leather text-white text-[10px] font-black px-3 py-1 rounded flex items-center gap-1 shadow-sm">
                   <span className="material-icons text-[12px]">verified</span> {item.tag}
                 </span>
                 <span className="text-[10px] text-leather/60 font-bold">{item.date}</span>
               </div>
-              <h3 className="text-2xl font-black text-leather mb-3 uppercase leading-tight font-display">{item.title}</h3>
-              <p className="text-leather/80 text-sm leading-relaxed mb-6 font-medium line-clamp-2">{item.description}</p>
+              <h3 className="text-2xl font-black text-leather mb-3 uppercase leading-tight font-display pr-4">{item.title}</h3>
+              <p className="text-leather/80 text-sm leading-relaxed mb-6 font-medium line-clamp-3">{item.description}</p>
 
               <button
-                onClick={() => alert(`Abrindo notícia: ${item.title}`)}
-                className="w-full bg-leather/5 hover:bg-leather/10 text-leather font-black text-xs uppercase tracking-widest py-4 rounded-xl flex items-center justify-center gap-2 mb-4 transition-colors"
+                onClick={() => setSelectedNews(item)}
+                className="w-full bg-white hover:bg-leather text-leather hover:text-white border border-leather/20 font-black text-xs uppercase tracking-widest py-4 rounded-xl flex items-center justify-center gap-2 mb-4 transition-colors shadow-sm"
               >
                 <span className="material-icons text-sm">visibility</span>
                 LER NOTÍCIA
@@ -87,29 +293,42 @@ const NewsView: React.FC = () => {
                 {item.id === '3' ? (
                   <>
                     <span className="text-[10px] font-bold text-leather/40 uppercase tracking-widest">EVENTO ID: #PP2024</span>
-                    <button className="bg-primary-orange text-white px-4 py-2 rounded-lg font-black uppercase text-[9px] tracking-widest shadow-lg shadow-primary-orange/20">GARANTIR SENHA</button>
+                    <button
+                        onClick={() => alert('Redirecionando para garantir a senha do evento...')}
+                        className="bg-primary-orange text-white px-4 py-2 rounded-lg font-black uppercase text-[9px] tracking-widest shadow-lg shadow-primary-orange/20 active:scale-95 transition-transform"
+                    >
+                        GARANTIR SENHA
+                    </button>
                   </>
                 ) : item.id === '2' ? (
                   <>
                     <div className="flex gap-2">
-                      <span className="w-8 h-8 rounded-full bg-primary-orange flex items-center justify-center text-white"><span className="material-icons text-sm">description</span></span>
-                      <span className="w-8 h-8 rounded-full bg-leather flex items-center justify-center text-white"><span className="material-icons text-sm">photo</span></span>
+                      <span className="w-8 h-8 rounded-full bg-primary-orange flex items-center justify-center text-white cursor-pointer hover:opacity-80 transition-opacity" onClick={() => alert('Baixando anexo: Regulamento PDF')}><span className="material-icons text-sm">description</span></span>
+                      <span className="w-8 h-8 rounded-full bg-leather flex items-center justify-center text-white cursor-pointer hover:opacity-80 transition-opacity" onClick={() => alert('Visualizando anexo: Foto explicativa')}><span className="material-icons text-sm">photo</span></span>
                     </div>
-                    <button className="text-primary-orange font-black text-[9px] uppercase tracking-widest flex items-center gap-1">ANEXOS PDF <span className="material-icons text-sm">attach_file</span></button>
+                    <button
+                        onClick={() => setSelectedNews(item)}
+                        className="text-primary-orange font-black text-[9px] uppercase tracking-widest flex items-center gap-1 hover:opacity-80 transition-opacity"
+                    >
+                        ANEXOS PDF <span className="material-icons text-sm">chevron_right</span>
+                    </button>
                   </>
                 ) : (
                   <>
                     <span className="text-[10px] font-black text-primary-orange uppercase tracking-widest">URGENTE</span>
-                    <div className="flex gap-1">
-                      <span className="material-icons text-leather/20">attachment</span>
-                      <span className="text-[9px] font-black text-leather/40">2 ANEXOS</span>
-                    </div>
+                    <button
+                        className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity bg-leather/5 px-2 py-1 rounded"
+                        onClick={() => setSelectedNews(item)}
+                    >
+                      <span className="material-icons text-leather/40 text-[14px]">attachment</span>
+                      <span className="text-[9px] font-black text-leather/60">ANEXOS</span>
+                    </button>
                   </>
                 )}
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       <div className="mt-12 text-center pb-8 opacity-20">

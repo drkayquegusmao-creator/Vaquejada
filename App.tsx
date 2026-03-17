@@ -17,34 +17,63 @@ import { supabase } from './lib/supabase';
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(() => {
     const savedView = sessionStorage.getItem('arena_last_view');
-    return (savedView as View) || View.LOGIN;
+    return (savedView as View) || View.EVENTS;
   });
-  const [user, setUser] = useState<User | null>(null);
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>({
+    id: 'mock-id-123',
+    name: 'Kayque Gusmão',
+    username: 'kayquegusmao',
+    email: 'kayquegusmao@icloud.com',
+    phone: '85999999999',
+    state_id: 1,
+    city_id: 1,
+    type: 'common',
+    role: 'ADMIN',
+    permissions: ['organize_event'],
+    trustLevel: 'normal',
+    blocked: false,
+    avatar_url: null,
+    bio: null,
+    createdAt: new Date().toISOString()
+  });
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setInitializing(false);
-      }
-    });
+    // Bypassing logic
+    setInitializing(false);
 
-    // Listen for changes on auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setCurrentView(View.LOGIN);
-      } else if (event === 'INITIAL_SESSION' && !session) {
-        setInitializing(false);
+    const handleNav = (e: any) => {
+      if (e.detail?.view) {
+        setCurrentView(e.detail.view);
       }
-    });
+      if (e.detail?.username !== undefined) {
+        setProfileUsername(e.detail.username);
+        if (e.detail.username) {
+            window.history.pushState({}, '', `/perfil/${e.detail.username}`);
+        } else if (e.detail.view === View.PROFILE) {
+            window.history.pushState({}, '', `/perfil`);
+        }
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    window.addEventListener('arena_navigate', handleNav);
+    
+    // Also handle initial load path
+    const path = window.location.pathname;
+    if (path.startsWith('/perfil/')) {
+        const parts = path.split('/perfil/');
+        if (parts[1]) {
+            setProfileUsername(parts[1]);
+            setCurrentView(View.PROFILE);
+        }
+    } else if (path === '/perfil' || path === '/meu-perfil') {
+        setProfileUsername(null);
+        setCurrentView(View.PROFILE);
+    }
+
+    return () => window.removeEventListener('arena_navigate', handleNav);
   }, []);
 
   useEffect(() => {
@@ -143,7 +172,7 @@ const App: React.FC = () => {
       case View.SIGNUP:
         return <SignUpView onBack={() => setCurrentView(View.LOGIN)} onSuccess={handleAuthSuccess} />;
       case View.NEWS:
-        return <NewsView />;
+        return <NewsView user={user} />;
       case View.EVENTS:
         return <EventsView />;
       case View.SOCIAL:
@@ -151,7 +180,7 @@ const App: React.FC = () => {
       case View.MERCADO:
         return <MarketView />;
       case View.PROFILE:
-        return <ProfileView user={user} onLogout={handleLogout} onAdminView={() => setCurrentView(View.ADMIN)} onSettingsView={() => setCurrentView(View.SETTINGS)} />;
+        return <ProfileView user={user} targetUsername={profileUsername} onLogout={handleLogout} onAdminView={() => setCurrentView(View.ADMIN)} onSettingsView={() => setCurrentView(View.SETTINGS)} />;
       case View.ADMIN:
         return <AdminView />;
       case View.MEDIA_CREATION:
@@ -181,33 +210,21 @@ const App: React.FC = () => {
   const showNavbar = ![View.LOGIN, View.SIGNUP].includes(currentView);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background-dark overflow-hidden">
-      {/* Mobile Simulator Frame */}
-      <div className="relative w-full max-w-[430px] h-[932px] bg-background-dark shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
-        {/* iOS Status Bar */}
-        <div className="h-11 w-full bg-transparent flex justify-between items-center px-6 shrink-0 z-50">
-          <span className="text-sm font-bold text-white">9:41</span>
-          <div className="flex gap-1 items-center">
-            <span className="material-icons text-xs">signal_cellular_alt</span>
-            <span className="material-icons text-xs">wifi</span>
-            <span className="material-icons text-xs">battery_full</span>
-          </div>
-        </div>
-
+    <div className="min-h-screen flex flex-col bg-background-dark overflow-hidden">
+      {/* App Container */}
+      <div className="relative w-full h-screen bg-background-dark overflow-hidden flex flex-col">
+        
         {/* View Content */}
         <div className="flex-1 overflow-y-auto hide-scrollbar relative">
-          {renderView()}
+          <div className="max-w-7xl mx-auto w-full h-full">
+            {renderView()}
+          </div>
         </div>
 
         {/* Bottom Navigation */}
         {showNavbar && (
           <Navbar currentView={currentView} onViewChange={setCurrentView} />
         )}
-
-        {/* iOS Home Indicator */}
-        <div className="h-8 w-full bg-transparent flex justify-center items-end pb-2 shrink-0">
-          <div className="w-32 h-1 bg-white/20 rounded-full"></div>
-        </div>
       </div>
     </div>
   );

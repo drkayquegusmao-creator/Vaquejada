@@ -1,6 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { EventItem } from '../types';
+import { EventItem, Circuito } from '../types';
+
+const MOCK_CIRCUITS: Circuito[] = [
+  { id: 'todos', nome: 'Todos os circuitos', slug: 'todos', ativo: true, destaque: true, ordem: 0 },
+  { id: 'alqm', nome: 'ALQM', slug: 'alqm', ativo: true, destaque: true, ordem: 1 },
+  { id: 'pe-pb', nome: 'PE-PB', slug: 'pe-pb', ativo: true, destaque: true, ordem: 2 },
+  { id: 'nacional-byd', nome: 'Nacional BYD', slug: 'nacional-byd', ativo: true, destaque: true, ordem: 3 },
+  { id: 'portal', nome: 'Portal', slug: 'portal', ativo: true, destaque: false, ordem: 4 },
+  { id: 'apqm', nome: 'APQM', slug: 'apqm', ativo: true, destaque: false, ordem: 5 },
+  { id: 'derby', nome: 'Derby', slug: 'derby', ativo: true, destaque: false, ordem: 6 },
+  { id: 'xaramego', nome: 'Xaramego', slug: 'xaramego', ativo: true, destaque: false, ordem: 7 },
+  { id: 'circuito-dos-campeoes', nome: 'Circuito dos Campeões', slug: 'circuito-dos-campeoes', ativo: true, destaque: false, ordem: 8 },
+  { id: 'regional-nordeste', nome: 'Regional Nordeste', slug: 'regional-nordeste', ativo: true, destaque: false, ordem: 9 }
+];
 
 const INITIAL_EVENTS: EventItem[] = [
   {
@@ -16,7 +29,8 @@ const INITIAL_EVENTS: EventItem[] = [
     instagram: '@vaquejadasurubim',
     phone: '(81) 99999-9999',
     prizes: 'R$ 200.000,00 em prêmios + 2 Motos 0km',
-    description: 'A maior vaquejada do Brasil está de volta! Venha viver a emoção de derrubar o boi na faixa e curtir grandes shows.'
+    description: 'A maior vaquejada do Brasil está de volta! Venha viver a emoção de derrubar o boi na faixa e curtir grandes shows.',
+    circuitoId: 'pe-pb'
   },
   {
     id: '2',
@@ -31,7 +45,8 @@ const INITIAL_EVENTS: EventItem[] = [
     instagram: '@portalvaquejada',
     phone: '(81) 98888-8888',
     prizes: 'R$ 300.000,00 em prêmios',
-    description: 'Etapa decisiva do campeonato portal. Os melhores vaqueiros do Brasil reunidos em um só lugar.'
+    description: 'Etapa decisiva do campeonato portal. Os melhores vaqueiros do Brasil reunidos em um só lugar.',
+    circuitoId: 'portal'
   },
   {
     id: '3',
@@ -46,7 +61,8 @@ const INITIAL_EVENTS: EventItem[] = [
     instagram: '@vaquejadaserrinhaoficial',
     phone: '(75) 97777-7777',
     prizes: 'R$ 150.000,00',
-    description: 'A festa do gado na Bahia! Tradição e modernidade se encontram em Serrinha.'
+    description: 'A festa do gado na Bahia! Tradição e modernidade se encontram em Serrinha.',
+    circuitoId: 'nacional-byd'
   },
   {
     id: '4',
@@ -80,6 +96,8 @@ const MOCK_ADVERTISERS = [
 
 const EventsView: React.FC = () => {
   const [selectedState, setSelectedState] = useState('TODOS');
+  const [selectedCircuit, setSelectedCircuit] = useState('todos');
+  const [isCircuitPanelOpen, setIsCircuitPanelOpen] = useState(false);
   const [viewingEvent, setViewingEvent] = useState<EventItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -122,7 +140,8 @@ const EventsView: React.FC = () => {
     const matchesSearch = searchQuery === '' ||
       e.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       e.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesState && matchesSearch;
+    const matchesCircuit = selectedCircuit === 'todos' || e.circuitoId === selectedCircuit;
+    return matchesState && matchesSearch && matchesCircuit;
   });
 
   // Detail View Overlay
@@ -154,9 +173,16 @@ const EventsView: React.FC = () => {
 
             {/* Hero Info */}
             <div className="absolute bottom-0 left-0 right-0 p-6 pt-12 bg-gradient-to-t from-background-dark to-transparent">
-              <span className="bg-[#D4AF37] text-background-dark text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest mb-3 inline-block shadow-lg shadow-[#D4AF37]/20">
-                {viewingEvent.category}
-              </span>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <span className="bg-[#D4AF37] text-background-dark text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-lg shadow-[#D4AF37]/20">
+                  {viewingEvent.category}
+                </span>
+                {viewingEvent.circuitoId && (
+                  <span className="bg-white/10 border border-[#D4AF37]/50 text-[#D4AF37] text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest backdrop-blur-md shadow-lg">
+                    Circuito {MOCK_CIRCUITS.find(c => c.id === viewingEvent.circuitoId)?.nome}
+                  </span>
+                )}
+              </div>
               <h1 className="text-3xl font-black uppercase leading-tight mb-2 text-white drop-shadow-xl">{viewingEvent.title}</h1>
               <div className="flex items-center gap-2 text-white/90">
                 <span className="material-icons text-[#D4AF37] text-sm">place</span>
@@ -255,7 +281,7 @@ const EventsView: React.FC = () => {
   // Main List View (Horizontal Scroll + Vertical List)
   return (
     <div className="px-6 py-6 pb-24 min-h-full bg-background-dark">
-      <header className="mb-6 sticky top-0 bg-background-dark z-40 py-2 -mx-6 px-6">
+      <header className="mb-6 -mx-6 px-6">
         <div className="flex justify-between items-center mb-6">
           {!isSearchOpen ? (
             <h1 className="text-2xl font-black uppercase text-[#D4AF37] tracking-tighter italic">VAQUEJADAS</h1>
@@ -302,19 +328,39 @@ const EventsView: React.FC = () => {
 
         {/* Horizontal Scrollable States */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
-          {STATES.map((uf, idx) => (
-            <button
-              key={uf}
-              onClick={() => setSelectedState(uf)}
-              className={`px-6 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest whitespace-nowrap transition-all border ${selectedState === uf ? 'bg-[#D4AF37] border-[#D4AF37] text-background-dark shadow-lg shadow-[#D4AF37]/20' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
-            >
-              {uf}
-            </button>
-          ))}
+          {STATES.map((uf, idx) => {
+            // Insere o botão Circuitos logo após 'TODOS' (que é idx === 0), ou seja, quando for renderizar o 'AC' eu jogo o botão antes nele ou trato o map
+            const btnState = (
+              <button
+                key={uf}
+                onClick={() => setSelectedState(uf)}
+                className={`px-6 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest whitespace-nowrap transition-all border ${selectedState === uf ? 'bg-[#D4AF37] border-[#D4AF37] text-background-dark shadow-lg shadow-[#D4AF37]/20' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+              >
+                {uf}
+              </button>
+            );
+
+            if (idx === 1) { // Injetar Circuitos logo após 'TODOS'
+              const isActive = selectedCircuit !== 'todos';
+              const label = isActive ? `CIRCUITOS • ${MOCK_CIRCUITS.find(c => c.id === selectedCircuit)?.nome.toUpperCase()}` : 'CIRCUITOS';
+              const btnCircuit = (
+                <button
+                  key="circuitos-btn"
+                  onClick={() => setIsCircuitPanelOpen(true)}
+                  className={`px-6 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest whitespace-nowrap transition-all border ${isActive ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-[#D4AF37] shadow-lg shadow-[#D4AF37]/20' : 'bg-white/5 border-white/10 text-[#D4AF37] hover:bg-white/10'}`}
+                >
+                  {label}
+                </button>
+              );
+              return <React.Fragment key={`frag-${uf}`}>{btnCircuit}{btnState}</React.Fragment>;
+            }
+
+            return btnState;
+          })}
         </div>
       </header>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEvents.length > 0 ? (
           filteredEvents.map((event) => {
             const isFav = favorites.includes(event.id);
@@ -374,11 +420,62 @@ const EventsView: React.FC = () => {
           })
         ) : (
           <div className="text-center py-20 opacity-40">
-            <span className="material-icons text-5xl mb-4">event_busy</span>
-            <p className="font-bold uppercase tracking-widest">Nenhum evento neste estado</p>
+            <span className="material-icons text-5xl mb-4 text-[#D4AF37]/50">event_busy</span>
+            <p className="font-bold uppercase tracking-widest text-[#D4AF37]">Nenhuma vaquejada encontrada</p>
+            <p className="text-xs mt-2 text-white/60">Tente alterar o estado ou limpar o filtro de circuito.</p>
+            {selectedCircuit !== 'todos' && (
+              <button 
+                onClick={() => setSelectedCircuit('todos')}
+                className="mt-6 px-6 py-2.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                Limpar Circuito
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {/* Circuitos Panel Modal */}
+      {isCircuitPanelOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-center items-end sm:items-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full sm:max-w-md bg-background-dark rounded-t-[32px] sm:rounded-3xl border sm:border-white/10 border-t border-white/10 p-6 pt-4 relative animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-10 duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] max-h-[85vh] flex flex-col">
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 shrink-0 sm:hidden" />
+            
+            <div className="flex justify-between items-center mb-2 shrink-0">
+              <h2 className="text-xl font-black uppercase text-white tracking-wide">Circuitos</h2>
+              <button onClick={() => setIsCircuitPanelOpen(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white transition-colors">
+                <span className="material-icons text-sm">close</span>
+              </button>
+            </div>
+            <p className="text-xs text-white/40 font-bold uppercase tracking-widest mb-6 shrink-0">
+              Selecione um circuito para visualizar as vaquejadas vinculadas.
+            </p>
+            
+            <div className="overflow-y-auto hide-scrollbar flex-1 -mx-2 px-2 pb-6">
+              <div className="flex flex-col gap-2">
+                {MOCK_CIRCUITS.map((circuito) => {
+                  const isSelected = selectedCircuit === circuito.id;
+                  return (
+                    <button
+                      key={circuito.id}
+                      onClick={() => {
+                        setSelectedCircuit(circuito.id);
+                        setIsCircuitPanelOpen(false);
+                      }}
+                      className={`px-5 py-4 rounded-2xl text-sm font-black tracking-wide transition-all border text-left flex justify-between items-center ${isSelected ? 'bg-[#D4AF37] border-[#D4AF37] text-background-dark shadow-lg shadow-[#D4AF37]/20' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'}`}
+                    >
+                      {circuito.nome}
+                      {isSelected && <span className="material-icons text-background-dark">check_circle</span>}
+                      {!isSelected && circuito.destaque && circuito.id !== 'todos' && <span className="material-icons text-[#D4AF37] text-[18px]">star</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
