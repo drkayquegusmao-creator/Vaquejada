@@ -160,6 +160,7 @@ const App: React.FC = () => {
           blocked: false,
           avatar_url: profile.avatar_url,
           bio: profile.bio,
+          username: profile.name?.toLowerCase().replace(/\s+/g, '_') || 'vaqueiro',
           createdAt: profile.created_at,
         };
         setUser(mappedUser);
@@ -193,6 +194,7 @@ const App: React.FC = () => {
         blocked: false,
         avatar_url: userData.avatar_url,
         bio: userData.bio,
+        username: userData.name?.toLowerCase().replace(/\s+/g, '_') || 'vaqueiro',
         createdAt: userData.created_at,
       };
       setUser(mappedUser);
@@ -262,7 +264,7 @@ const App: React.FC = () => {
     }
   };
 
-  const showNavbar = ![View.LOGIN, View.SIGNUP, View.FORGOT_PASSWORD].includes(currentView);
+  const showNavbar = !!user && ![View.LOGIN, View.SIGNUP, View.FORGOT_PASSWORD].includes(currentView);
 
   return (
     <div className="min-h-screen flex flex-col bg-background-dark overflow-hidden">

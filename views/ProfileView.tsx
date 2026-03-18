@@ -160,7 +160,23 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
         }, 600);
     }, [isMyProfile, targetUsername, user]);
 
-    if (!user) return null;
+    if (!user) {
+        return (
+            <div className="min-h-full bg-background-dark flex flex-col items-center justify-center p-8 text-center pb-32">
+                <span className="material-icons text-white/20 text-6xl mb-6 font-thin">lock_outline</span>
+                <h1 className="text-xl font-black text-white italic uppercase tracking-tighter mb-2 underline-offset-8">Acesso <span className="text-[#ECA413]">Restrito</span></h1>
+                <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-10 leading-snug max-w-[240px]">
+                    Siga o rastro e faça o login para ver seu perfil na Arena.
+                </p>
+                <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'LOGIN' } }))}
+                  className="bg-[#ECA413] text-black px-10 py-4 rounded-3xl font-black text-[10px] uppercase tracking-[0.15em] shadow-xl hover:scale-105 active:scale-95 transition-all"
+                >
+                  ENTRAR AGORA
+                </button>
+            </div>
+        );
+    }
 
     if (loading || !profileData) {
         return (
