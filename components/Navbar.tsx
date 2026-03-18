@@ -4,9 +4,10 @@ import { View } from '../types';
 interface NavbarProps {
   currentView: View;
   onViewChange: (view: View) => void;
+  user: any;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ currentView, onViewChange }) => {
+const Navbar: React.FC<NavbarProps> = ({ currentView, onViewChange, user }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleNav = (view: View) => {
@@ -83,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onViewChange }) => {
               className={`w-8 h-8 rounded-full border-2 transition-all overflow-hidden flex items-center justify-center ${currentView === View.PROFILE ? 'border-[#ECA413]' : 'border-white/10 opacity-30 hover:opacity-100'
                 }`}
             >
-              <img src="https://picsum.photos/seed/profile/100" className="w-full h-full object-cover" alt="" />
+              <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`} className="w-full h-full object-cover" alt="" />
             </button>
           </div>
 

@@ -384,7 +384,11 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
                 className={`relative w-[72px] h-[72px] rounded-full p-[2.5px] cursor-pointer active:scale-95 transition-transform ${story.hasNew ? 'bg-gradient-to-tr from-[#ECA413] via-[#8B4513] to-[#ECA413]' : 'bg-white/10'}`}
               >
                 <div className="w-full h-full rounded-full border-[3px] border-background-dark overflow-hidden bg-neutral-800">
-                  <img src={story.avatar} className="w-full h-full object-cover" alt={story.username} />
+                  <img 
+                    src={story.id === '1' ? (user?.avatar_url || story.avatar) : story.avatar} 
+                    className="w-full h-full object-cover" 
+                    alt={story.username} 
+                  />
                 </div>
                 {story.id === '1' && (
                   <div
@@ -395,10 +399,10 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
                 )}
               </div>
               <span 
-                onClick={() => navigateToProfile(story.username)}
+                onClick={() => navigateToProfile(story.id === '1' ? (user?.username || 'meu-perfil') : story.username)}
                 className={`text-[10px] font-bold tracking-tight cursor-pointer hover:underline ${story.hasNew ? 'text-white' : 'opacity-40 text-white'}`}
               >
-                {story.username}
+                {story.id === '1' ? 'Meu Status' : story.username}
               </span>
             </div>
           ))}

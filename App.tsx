@@ -279,7 +279,7 @@ const App: React.FC = () => {
 
         {/* Bottom Navigation */}
         {showNavbar && (
-          <Navbar currentView={currentView} onViewChange={setCurrentView} />
+          <Navbar currentView={currentView} onViewChange={setCurrentView} user={user} />
         )}
       </div>
     </div>
