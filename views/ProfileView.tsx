@@ -184,9 +184,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
             <div className="px-6 pt-10 pb-4 flex justify-between items-center sticky top-0 bg-background-dark/90 backdrop-blur-md z-10 border-b border-white/5">
                 <button
                    onClick={() => window.history.back()}
-                   className="material-icons opacity-60 hover:opacity-100 transition-opacity"
+                   className="material-icons opacity-100 text-white transition-all hover:scale-110 active:scale-90"
                 >
-                   {isMyProfile ? '' : 'arrow_back'}
+                   arrow_back
                 </button>
                 <h1 className="text-white font-black text-lg tracking-wider uppercase border text-center opacity-0">PERFIL</h1> 
                 <div className="flex gap-4">
