@@ -43,6 +43,32 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
     // Determines if the user is looking at their own profile
     const isMyProfile = !targetUsername || (user && user.username && targetUsername === user.username);
 
+    // Persist Follow State locally
+    useEffect(() => {
+        if (!isMyProfile && targetUsername) {
+            const follows = JSON.parse(localStorage.getItem('arena_follows') || '{}');
+            setIsFollowing(!!follows[targetUsername]);
+        }
+    }, [isMyProfile, targetUsername]);
+
+    const handleToggleFollow = () => {
+        setIsFollowing(prev => {
+            const next = !prev;
+            if (targetUsername) {
+                const follows = JSON.parse(localStorage.getItem('arena_follows') || '{}');
+                follows[targetUsername] = next;
+                localStorage.setItem('arena_follows', JSON.stringify(follows));
+                
+                // Update local profile count for immediate feedback
+                setProfileData((curr: any) => curr ? {
+                    ...curr, 
+                    followers: curr.followers + (next ? 1 : -1)
+                } : curr);
+            }
+            return next;
+        });
+    };
+
     const handleShare = (post: any) => {
         if (navigator.share) {
             navigator.share({
@@ -207,7 +233,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                     ) : (
                         <>
                             <button 
-                                onClick={() => setIsFollowing(!isFollowing)}
+                                onClick={handleToggleFollow}
                                 className={`flex-1 ${isFollowing ? 'bg-white/10 text-white' : 'bg-[#ECA413] text-black'} py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center active:scale-95 transition-all`}
                             >
                                 {isFollowing ? 'Seguindo' : 'Seguir'}

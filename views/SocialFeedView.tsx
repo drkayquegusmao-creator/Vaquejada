@@ -54,8 +54,29 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
   // DM State
   const [isDMScreenOpen, setIsDMScreenOpen] = useState(false);
   const [activeChatUser, setActiveChatUser] = useState<string | null>(null);
-  const [messages, setMessages] = useState<{sender: string, text: string, time: string}[]>([]);
+  const [messages, setMessages] = useState<{sender: string, text: string, time: string, chatWith: string}[]>(() => {
+    const saved = localStorage.getItem('arena_dms');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [newMessage, setNewMessage] = useState('');
+
+  // Persist DMs
+  useEffect(() => {
+    localStorage.setItem('arena_dms', JSON.stringify(messages));
+  }, [messages]);
+
+  // Additional Social States (Comments & Notifications)
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [activeCommentsPost, setActiveCommentsPost] = useState<PostItem | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const [postComments, setPostComments] = useState<{username: string, text: string, time: string}[]>([]);
+  
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notificationsMock] = useState([
+    { id: 1, type: 'follow', user: 'haras_nobre', text: 'começou a seguir você.', time: 'há 2m' },
+    { id: 2, type: 'like', user: 'vitor_vaqueiro', text: 'curtiu sua publicação.', time: 'há 1h' },
+    { id: 3, type: 'comment', user: 'ana_montaria', text: 'comentou: "Belo cavalo!"', time: 'há 5h' },
+  ]);
 
   const handleShare = (post: PostItem) => {
     if (navigator.share) {
@@ -139,16 +160,48 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
           <button onClick={onMediaCreation} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 active:scale-90 transition-transform">
             <span className="material-icons text-xl text-white">add_box</span>
           </button>
-          <button className="relative">
-            <span className="material-icons text-2xl text-white">favorite_border</span>
+          
+          <button className="relative" onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}>
+            <span className={`material-icons text-2xl ${isNotificationsOpen ? 'text-[#ECA413]' : 'text-white'}`}>favorite_border</span>
             <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#ECA413] border-2 border-background-dark rounded-full"></span>
           </button>
+
           <button className="relative" onClick={() => setIsDMScreenOpen(true)}>
             <span className="material-icons text-2xl text-white">send</span>
             <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 border-2 border-background-dark rounded-full flex items-center justify-center text-[6px] font-black text-white">2</span>
           </button>
         </div>
       </header>
+
+      {/* Notifications Overlay */}
+      {isNotificationsOpen && (
+        <div className="absolute top-[68px] right-4 w-[300px] z-50 bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 overflow-hidden">
+            <div className="p-4 border-b border-white/10">
+                <h3 className="font-black text-white tracking-widest text-[11px] uppercase">Ações & Notificações</h3>
+            </div>
+            <div className="max-h-[300px] overflow-y-auto">
+                {notificationsMock.map(notif => (
+                    <div key={notif.id} className="p-4 border-b border-white/5 flex gap-3 items-center hover:bg-white/5 transition-colors cursor-pointer" onClick={() => navigateToProfile(notif.user)}>
+                        <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden shrink-0">
+                            <img src={`https://picsum.photos/seed/${notif.user}/100`} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-[12px] text-white/90 leading-tight">
+                                <span className="font-black mr-1">{notif.user}</span>
+                                {notif.text}
+                            </p>
+                            <p className="text-[#ECA413] text-[9px] font-black uppercase tracking-wider mt-1">{notif.time}</p>
+                        </div>
+                        {notif.type === 'follow' && (
+                            <button className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform">
+                                Seguir
+                            </button>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
 
       {/* Stories Bar */}
       <div className="py-4 overflow-x-auto hide-scrollbar whitespace-nowrap border-b border-white/5">
@@ -246,7 +299,14 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                   </span>
                 </button>
                 <button
-                  onClick={() => alert("Abrindo comentários...")}
+                  onClick={() => {
+                    setActiveCommentsPost(post);
+                    setIsCommentsOpen(true);
+                    setPostComments([
+                      { username: 'vitor_vaqueiro', text: 'Belo cavalo patrão, tá top! 🐎', time: '1h' },
+                      { username: 'ana_montaria', text: 'Sensacional, próxima etapa a gente se vê.', time: '4h' }
+                    ]);
+                  }}
                   className="flex items-center gap-2"
                 >
                   <span className="material-icons text-[24px] text-white">chat_bubble_outline</span>
@@ -286,8 +346,15 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                 <span className="text-white/90 font-medium">{post.caption}</span>
               </p>
               <button
-                onClick={() => alert("Mostrando todos os comentários...")}
-                className="text-[11px] font-black opacity-40 text-white uppercase tracking-widest block py-0.5"
+                onClick={() => {
+                  setActiveCommentsPost(post);
+                  setIsCommentsOpen(true);
+                  setPostComments([
+                    { username: 'vitor_vaqueiro', text: 'Belo cavalo patrão, tá top! 🐎', time: '1h' },
+                    { username: 'ana_montaria', text: 'Sensacional, próxima etapa a gente se vê.', time: '4h' }
+                  ]);
+                }}
+                className="text-[11px] font-black opacity-40 text-white uppercase tracking-widest block py-0.5 active:opacity-100"
               >
                 VER TODOS OS {post.comments} COMENTÁRIOS
               </button>
@@ -296,6 +363,89 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
           </article>
         ))}
       </main>
+
+      {/* Coments Sliding Panel Overlay */}
+      {isCommentsOpen && activeCommentsPost && (
+        <div className="fixed inset-0 z-[200] flex flex-col justify-end animate-in slide-in-from-bottom duration-300 pointer-events-none">
+            {/* Click to dismiss */}
+            <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={() => setIsCommentsOpen(false)}></div>
+            
+            <div className="bg-[#1C1C1E] h-[80vh] w-full rounded-t-3xl relative z-10 pointer-events-auto flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-white/5">
+                <div className="flex justify-center p-3">
+                    <div className="w-10 h-1 rounded-full bg-white/20"></div>
+                </div>
+                <div className="px-6 py-2 border-b border-white/5 text-center">
+                    <h3 className="font-black text-xs text-white uppercase tracking-widest">Comentários</h3>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* Caption / description block inside comments */}
+                    <div className="flex gap-4 pb-6 border-b border-white/5">
+                        <div className="w-8 h-8 rounded-full border border-white/10 shrink-0 overflow-hidden">
+                            <img src={`https://picsum.photos/seed/${activeCommentsPost.username}/100`} />
+                        </div>
+                        <div>
+                            <p className="text-[13px] text-white/90 leading-snug">
+                                <span className="font-black mr-2 text-white">{activeCommentsPost.username}</span>
+                                {activeCommentsPost.caption}
+                            </p>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2 block">{activeCommentsPost.timeAgo}</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {postComments.map((comment, i) => (
+                            <div key={i} className="flex gap-4">
+                                <div className="w-8 h-8 rounded-full border border-white/10 shrink-0 overflow-hidden cursor-pointer" onClick={() => { setIsCommentsOpen(false); navigateToProfile(comment.username) }}>
+                                    <img src={`https://picsum.photos/seed/${comment.username}/100`} />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-[13px] text-white/90 leading-snug">
+                                        <span onClick={() => { setIsCommentsOpen(false); navigateToProfile(comment.username) }} className="font-black mr-2 text-white cursor-pointer">{comment.username}</span>
+                                        {comment.text}
+                                    </p>
+                                    <div className="flex gap-4 items-center mt-1">
+                                        <span className="text-[10px] font-bold text-white/40">{comment.time}</span>
+                                        <button className="text-[10px] font-black text-white/40 uppercase tracking-widest hover:text-white">Responder</button>
+                                    </div>
+                                </div>
+                                <button className="material-icons text-[14px] text-white/20 hover:text-red-500 transition-colors">favorite_border</button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Input Area */}
+                <div className="p-4 bg-background-dark/80 backdrop-blur-md border-t border-white/5 flex gap-3">
+                    <div className="w-10 h-10 rounded-full bg-neutral-800 shrink-0 border border-white/10 overflow-hidden">
+                        <img src="https://picsum.photos/seed/myAvatar/100" />
+                    </div>
+                    <div className="flex-1 bg-white/10 rounded-full flex items-center px-4 border border-white/10">
+                        <input
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            onKeyDown={e => {
+                                if(e.key === 'Enter' && commentText.trim()) {
+                                    setPostComments([...postComments, { username: 'voce_vaqueiro', text: commentText, time: 'agora' }]);
+                                    setCommentText('');
+                                }
+                            }}
+                            className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-white/40"
+                            placeholder="Adicione um comentário..."
+                        />
+                    </div>
+                    {commentText.trim() && (
+                        <button onClick={() => {
+                            setPostComments([...postComments, { username: 'voce_vaqueiro', text: commentText, time: 'agora' }]);
+                            setCommentText('');
+                        }} className="font-black text-[12px] text-[#ECA413] px-2 uppercase active:scale-95 transition-transform">
+                            Publicar
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+      )}
 
       {/* Story Viewer Overlay */}
       {activeStoryIndex !== null && (
@@ -398,21 +548,25 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                 </div>
               </div>
               <h4 className="px-6 py-2 text-[10px] font-black uppercase text-white/40 tracking-widest">Recentes</h4>
-              {['vitor_vaqueiro', 'ana_montaria', 'haras_nobre'].map(user => (
-                <div key={user} onClick={() => { setActiveChatUser(user); setMessages([{sender: user, text: 'Fala patrão, vai colar no circuito?', time: '10:30'}]); }} className="px-6 py-4 flex items-center gap-4 border-b border-white/5 active:bg-white/5 cursor-pointer transition-colors">
-                  <div className="w-14 h-14 rounded-full border border-white/10 overflow-hidden bg-neutral-800">
-                    <img src={`https://picsum.photos/seed/${user}/100`} className="w-full h-full object-cover" />
+              {['vitor_vaqueiro', 'ana_montaria', 'haras_nobre'].map(user => {
+                const userMessages = messages.filter(m => m.chatWith === user);
+                const lastMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1] : {text: 'Tocar para conversar...', time: ''};
+                return (
+                  <div key={user} onClick={() => { setActiveChatUser(user); }} className="px-6 py-4 flex items-center gap-4 border-b border-white/5 active:bg-white/5 cursor-pointer transition-colors">
+                    <div className="w-14 h-14 rounded-full border border-white/10 overflow-hidden bg-neutral-800">
+                      <img src={`https://picsum.photos/seed/${user}/100`} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-black text-sm text-white mb-0.5">{user}</p>
+                      <p className="text-xs font-medium text-white/60 truncate">{lastMessage.text}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[10px] font-bold text-white/40">{lastMessage.time}</span>
+                      {user === 'vitor_vaqueiro' && userMessages.length === 0 && <div className="w-2 h-2 rounded-full bg-[#ECA413]"></div>}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-black text-sm text-white mb-0.5">{user}</p>
-                    <p className="text-xs font-medium text-white/60 truncate">Fala patrão, vai colar no circuito esse FDS?</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-[10px] font-bold text-white/40">10:30</span>
-                    <div className="w-2 h-2 rounded-full bg-[#ECA413]"></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex-1 flex flex-col bg-neutral-900/50 relative">
@@ -420,7 +574,7 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                 <div className="flex justify-center mb-6">
                   <div className="bg-white/10 rounded-full px-3 py-1 text-[10px] font-bold text-white/60 uppercase">HOJE</div>
                 </div>
-                {messages.map((msg, idx) => (
+                {messages.filter(m => m.chatWith === activeChatUser).map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${msg.sender === 'me' ? 'bg-[#ECA413] text-black rounded-tr-sm' : 'bg-white/10 text-white rounded-tl-sm'}`}>
                       <p className="font-medium text-[13px]">{msg.text}</p>
@@ -435,8 +589,8 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
                     onKeyDown={e => {
-                      if (e.key === 'Enter' && newMessage.trim()) {
-                        setMessages([...messages, { sender: 'me', text: newMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
+                      if (e.key === 'Enter' && newMessage.trim() && activeChatUser) {
+                        setMessages([...messages, { sender: 'me', text: newMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), chatWith: activeChatUser }]);
                         setNewMessage('');
                       }
                     }}
@@ -447,8 +601,10 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                 {newMessage.trim() ? (
                   <button 
                     onClick={() => {
-                      setMessages([...messages, { sender: 'me', text: newMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
-                      setNewMessage('');
+                      if (activeChatUser) {
+                        setMessages([...messages, { sender: 'me', text: newMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), chatWith: activeChatUser }]);
+                        setNewMessage('');
+                      }
                     }}
                     className="w-12 h-12 rounded-full bg-[#ECA413] flex items-center justify-center text-black shadow-lg"
                   >
