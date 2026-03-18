@@ -44,12 +44,27 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp, onForgotPasswo
           .single();
 
         if (profileError) {
-          setError('Erro ao carregar perfil. Verifique sua conexão.');
-          setLoading(false);
-          return;
-        }
+          // If profile is missing, create a default one on the fly
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              name: data.user.email?.split('@')[0] || 'Novo Vaqueiro',
+              email: data.user.email,
+              role: 'USER'
+            })
+            .select()
+            .single();
 
-        onLogin(profile);
+          if (createError) {
+            setError('Erro ao criar perfil inicial. Tente novamente.');
+            setLoading(false);
+            return;
+          }
+          onLogin(newProfile);
+        } else {
+          onLogin(profile);
+        }
       }
     } catch (err) {
       setError('Erro de conexão com a Arena.');
