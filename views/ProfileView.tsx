@@ -489,10 +489,31 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                         <button onClick={() => setIsEditProfileOpen(false)} className="text-sm font-bold text-white/60">Cancelar</button>
                         <h3 className="text-xs font-black uppercase tracking-widest text-white">Editar Perfil</h3>
                         <button 
-                            onClick={() => {
-                                // In a real app, this would hit the API
-                                // For now, handle via local profileData update
+                            onClick={async () => {
                                 setIsEditProfileOpen(false);
+                                // Real save to Supabase
+                                if (user?.id) {
+                                    setLoading(true);
+                                    try {
+                                        const { error } = await supabase
+                                            .from('profiles')
+                                            .update({
+                                                name: profileData.name,
+                                                bio: profileData.bio,
+                                                avatar_url: profileData.avatar_url
+                                                // Assuming username is protected for now
+                                            })
+                                            .eq('id', user.id);
+                                        
+                                        if (error) throw error;
+                                        alert('Perfil atualizado com sucesso!');
+                                    } catch (err: any) {
+                                        console.error('Erro ao salvar perfil:', err);
+                                        // Fallback local update is already done since we used profileData in inputs
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }
                             }}
                             className="text-sm font-black text-[#ECA413]"
                         >

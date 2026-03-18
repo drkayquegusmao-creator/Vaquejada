@@ -92,11 +92,73 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
   const [hasUnreadDMs, setHasUnreadDMs] = useState(true);
-  const [notificationsMock] = useState([
-    { id: 1, type: 'follow', user: 'haras_nobre', text: 'começou a seguir você.', time: 'há 2m' },
-    { id: 2, type: 'like', user: 'vitor_vaqueiro', text: 'curtiu sua publicação.', time: 'há 1h' },
-    { id: 3, type: 'comment', user: 'ana_montaria', text: 'comentou: "Belo cavalo!"', time: 'há 5h' },
-  ]);
+  const [notifications, setNotifications] = useState<{ id: number, type: string, user: string, text: string, time: string, postId?: string }[]>(() => {
+    const saved = localStorage.getItem('arena_notifications');
+    return saved ? JSON.parse(saved) : [
+        { id: 1, type: 'follow', user: 'haras_nobre', text: 'começou a seguir você.', time: 'há 2m' },
+        { id: 2, type: 'like', user: 'vitor_vaqueiro', text: 'curtiu sua publicação.', time: 'há 1h' },
+        { id: 3, type: 'comment', user: 'ana_montaria', text: 'comentou: "Belo cavalo!"', time: 'há 5h' },
+    ];
+  });
+
+  // Mentions logic
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
+  const MOCK_USERS_FOR_MENTIONS = ['vitor_vaqueiro', 'ana_montaria', 'haras_nobre', 'parque_palmeira', 'joao_vaquejada'];
+
+  // Persist Notifications
+  useEffect(() => {
+    localStorage.setItem('arena_notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  // Handle detection of @
+  const handleCommentChange = (text: string) => {
+    setCommentText(text);
+    const lastWord = text.split(/\s/).pop() || '';
+    if (lastWord.startsWith('@') && lastWord.length > 1) {
+        setMentionQuery(lastWord.substring(1).toLowerCase());
+        setShowMentionSuggestions(true);
+    } else {
+        setShowMentionSuggestions(false);
+    }
+  };
+
+  const insertMention = (username: string) => {
+    const words = commentText.split(/\s/);
+    words.pop(); // remove the partial mention
+    const newText = [...words, `@${username} `].join(' ');
+    setCommentText(newText);
+    setShowMentionSuggestions(false);
+  };
+
+  const handlePostComment = () => {
+    if (!commentText.trim() || !activeCommentsPost) return;
+
+    const newComment = { username: 'voce_vaqueiro', text: commentText, time: 'agora' };
+    setPostComments([...postComments, newComment]);
+    
+    // Check for mentions in the text
+    const mentions = commentText.match(/@(\w+)/g);
+    if (mentions) {
+        mentions.forEach(m => {
+            const target = m.substring(1);
+            // In a real app, this would notify the target user
+            // Locally, we simulate adding it to notifications (though for demo we see our own notifications)
+            const newNotif = {
+                id: Date.now() + Math.random(),
+                type: 'mention',
+                user: 'voce_vaqueiro',
+                text: `mencionou você em um comentário no post de ${activeCommentsPost.username}.`,
+                time: 'agora',
+                postId: activeCommentsPost.id
+            };
+            setNotifications([newNotif, ...notifications]);
+            setHasUnreadNotifications(true);
+        });
+    }
+
+    setCommentText('');
+  };
 
   // Logic to handle direct navigation to a chat
   useEffect(() => {
@@ -229,9 +291,22 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
                 <div className="p-4 border-b border-white/10">
                 <h3 className="font-black text-white tracking-widest text-[11px] uppercase">Ações & Notificações</h3>
             </div>
-            <div className="max-h-[300px] overflow-y-auto">
-                {notificationsMock.map(notif => (
-                    <div key={notif.id} className="p-4 border-b border-white/5 flex gap-3 items-center hover:bg-white/5 transition-colors cursor-pointer" onClick={() => navigateToProfile(notif.user)}>
+            <div className="max-h-[350px] overflow-y-auto">
+                {notifications.map(notif => (
+                    <div 
+                        key={notif.id} 
+                        className="p-4 border-b border-white/5 flex gap-3 items-center hover:bg-white/5 transition-colors cursor-pointer" 
+                        onClick={() => {
+                            if (notif.postId) {
+                                // Close notifications and find the post - for demo we just alerts
+                                setIsNotificationsOpen(false);
+                                // In a real app, we'd scroll to or open that post
+                                alert(`Navegando para o post ID: ${notif.postId}`);
+                            } else {
+                                navigateToProfile(notif.user);
+                            }
+                        }}
+                    >
                         <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden shrink-0">
                             <img src={`https://picsum.photos/seed/${notif.user}/100`} className="w-full h-full object-cover" />
                         </div>
@@ -246,6 +321,9 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
                             <button className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform">
                                 Seguir
                             </button>
+                        )}
+                        {notif.postId && (
+                             <span className="material-icons text-[#ECA413] text-sm">chevron_right</span>
                         )}
                     </div>
                 ))}
@@ -467,32 +545,51 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 bg-background-dark/80 backdrop-blur-md border-t border-white/5 flex gap-3">
-                    <div className="w-10 h-10 rounded-full bg-neutral-800 shrink-0 border border-white/10 overflow-hidden">
-                        <img src="https://picsum.photos/seed/myAvatar/100" />
-                    </div>
-                    <div className="flex-1 bg-white/10 rounded-full flex items-center px-4 border border-white/10">
-                        <input
-                            value={commentText}
-                            onChange={(e) => setCommentText(e.target.value)}
-                            onKeyDown={e => {
-                                if(e.key === 'Enter' && commentText.trim()) {
-                                    setPostComments([...postComments, { username: 'voce_vaqueiro', text: commentText, time: 'agora' }]);
-                                    setCommentText('');
-                                }
-                            }}
-                            className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-white/40"
-                            placeholder="Adicione um comentário..."
-                        />
-                    </div>
-                    {commentText.trim() && (
-                        <button onClick={() => {
-                            setPostComments([...postComments, { username: 'voce_vaqueiro', text: commentText, time: 'agora' }]);
-                            setCommentText('');
-                        }} className="font-black text-[12px] text-[#ECA413] px-2 uppercase active:scale-95 transition-transform">
-                            Publicar
-                        </button>
+                <div className="p-4 bg-background-dark/80 backdrop-blur-md border-t border-white/5 relative">
+                    {/* Mention Suggestions UI */}
+                    {showMentionSuggestions && (
+                        <div className="absolute bottom-full left-0 right-0 bg-[#2C2C2E] border-t border-white/5 p-2 animate-in slide-in-from-bottom-2">
+                             <p className="text-[9px] font-black uppercase text-white/40 tracking-widest mb-2 ml-2">Sugeridos</p>
+                             <div className="flex gap-4 overflow-x-auto pb-2 px-2 hide-scrollbar">
+                                {MOCK_USERS_FOR_MENTIONS.filter(u => u.includes(mentionQuery)).map(u => (
+                                    <div 
+                                        key={u} 
+                                        onClick={() => insertMention(u)}
+                                        className="flex flex-col items-center gap-1 cursor-pointer active:scale-90 transition-transform"
+                                    >
+                                        <div className="w-10 h-10 rounded-full border border-[#ECA413]/40 p-0.5">
+                                             <img src={`https://picsum.photos/seed/${u}/100`} className="w-full h-full rounded-full object-cover" />
+                                        </div>
+                                        <span className="text-[9px] font-black text-white/80">@{u}</span>
+                                    </div>
+                                ))}
+                             </div>
+                        </div>
                     )}
+
+                    <div className="flex gap-3">
+                        <div className="w-10 h-10 rounded-full bg-neutral-800 shrink-0 border border-white/10 overflow-hidden">
+                            <img src="https://picsum.photos/seed/myAvatar/100" />
+                        </div>
+                        <div className="flex-1 bg-white/10 rounded-full flex items-center px-4 border border-white/10">
+                            <input
+                                value={commentText}
+                                onChange={(e) => handleCommentChange(e.target.value)}
+                                onKeyDown={e => {
+                                    if(e.key === 'Enter' && commentText.trim()) {
+                                        handlePostComment();
+                                    }
+                                }}
+                                className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-white/40"
+                                placeholder="Adicione um comentário..."
+                            />
+                        </div>
+                        {commentText.trim() && (
+                            <button onClick={handlePostComment} className="font-black text-[12px] text-[#ECA413] px-2 uppercase active:scale-95 transition-transform">
+                                Publicar
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
