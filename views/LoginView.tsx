@@ -4,9 +4,10 @@ import { supabase } from '../lib/supabase';
 interface LoginViewProps {
   onLogin: (userData: any) => void;
   onSignUp: () => void;
+  onForgotPassword: () => void;
 }
 
-const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp }) => {
+const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp, onForgotPassword }) => {
   const [email, setEmail] = useState('kayquegusmao@icloud.com');
   const [password, setPassword] = useState('kayque2009');
   const [loading, setLoading] = useState(false);
@@ -109,7 +110,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp }) => {
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-[#ECA413]">Sua Senha</label>
-                <button type="button" className="text-[9px] font-black uppercase tracking-widest text-white/30 hover:text-[#ECA413]">Esqueci minha senha</button>
+                <button 
+                  type="button" 
+                  onClick={onForgotPassword}
+                  className="text-[9px] font-black uppercase tracking-widest text-white/30 hover:text-[#ECA413]"
+                >
+                  Esqueci minha senha
+                </button>
               </div>
               <div className="relative group">
                 <span className="absolute left-5 top-1/2 -translate-y-1/2 material-icons text-white/20 group-focus-within:text-[#ECA413] transition-colors">lock</span>

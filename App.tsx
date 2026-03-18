@@ -11,6 +11,7 @@ import ProfileView from './views/ProfileView';
 import AdminView from './views/AdminView';
 import MediaCreationView from './views/MediaCreationView';
 import SettingsView from './views/SettingsView';
+import ForgotPasswordView from './views/ForgotPasswordView';
 import Navbar from './components/Navbar';
 import { supabase } from './lib/supabase';
 
@@ -20,30 +21,45 @@ const App: React.FC = () => {
     return (savedView as View) || View.EVENTS;
   });
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>({
-    id: 'mock-id-123',
-    name: 'Kayque Gusmão',
-    username: 'kayquegusmao',
-    email: 'kayquegusmao@icloud.com',
-    phone: '85999999999',
-    state_id: 1,
-    city_id: 1,
-    type: 'common',
-    role: 'ADMIN',
-    permissions: ['organize_event'],
-    trustLevel: 'normal',
-    blocked: false,
-    avatar_url: null,
-    bio: null,
-    createdAt: new Date().toISOString()
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    // Bypassing logic
-    setInitializing(false);
+    // 1. Initial Session Check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setInitializing(false);
+        // If not logged in and not on login/signup/forgot, go to login
+        if (![View.LOGIN, View.SIGNUP, View.FORGOT_PASSWORD].includes(currentView)) {
+          setCurrentView(View.LOGIN);
+        }
+      }
+    });
 
+    // 2. Auth State Listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setUser(null);
+        if (event === 'SIGNED_OUT') {
+           setCurrentView(View.LOGIN);
+        }
+      }
+
+      // Handle Password Recovery Hash
+      if (event === 'PASSWORD_RECOVERY') {
+         setCurrentView(View.FORGOT_PASSWORD);
+      }
+    });
+
+    // Cleanup subscription
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     const handleNav = (e: any) => {
       const view = e.detail?.view || currentView;
       const username = e.detail?.username ?? null;
@@ -205,7 +221,7 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (currentView) {
       case View.LOGIN:
-        return <LoginView onLogin={handleAuthSuccess} onSignUp={() => setCurrentView(View.SIGNUP)} />;
+        return <LoginView onLogin={handleAuthSuccess} onSignUp={() => setCurrentView(View.SIGNUP)} onForgotPassword={() => setCurrentView(View.FORGOT_PASSWORD)} />;
       case View.SIGNUP:
         return <SignUpView onBack={() => setCurrentView(View.LOGIN)} onSuccess={handleAuthSuccess} />;
       case View.NEWS:
@@ -239,6 +255,8 @@ const App: React.FC = () => {
             onLogout={handleLogout}
           />
         );
+      case View.FORGOT_PASSWORD:
+        return <ForgotPasswordView onBack={() => setCurrentView(View.LOGIN)} />;
       default:
         return <EventsView />;
     }
