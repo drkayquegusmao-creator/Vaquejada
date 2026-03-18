@@ -34,6 +34,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
     const [activeTab, setActiveTab] = useState<TabType>('POSTS');
     const [profileData, setProfileData] = useState<any>(null);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [selectedPost, setSelectedPost] = useState<any>(null);
+    const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+    const [profilePosts, setProfilePosts] = useState(MY_POSTS_MOCK);
+    const [editingPost, setEditingPost] = useState<string | null>(null);
+    const [editCaption, setEditCaption] = useState('');
 
     // Determines if the user is looking at their own profile
     const isMyProfile = !targetUsername || (user && user.username && targetUsername === user.username);
@@ -50,7 +55,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                     avatar_url: user.avatar_url,
                     bio: user.bio || 'Bem-vindo ao meu perfil no +Vaquejada!',
                     location: `${user.city_id || 'Arena'}, ${user.state_id || '+VAQUEJADA'}`,
-                    posts: MY_POSTS_MOCK.length,
+                    posts: profilePosts.length,
                     followers: 452,
                     following: 128,
                     points: '1.2k',
@@ -132,7 +137,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                             />
                         </div>
                         {isMyProfile && (
-                            <div className="absolute bottom-0 right-0 bg-[#ECA413] text-black w-8 h-8 rounded-full border-2 border-background-dark flex items-center justify-center cursor-pointer shadow-lg active:scale-90 transition-transform">
+                            <div 
+                                onClick={() => window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'MEDIA_CREATION' } }))}
+                                className="absolute bottom-0 right-0 bg-[#ECA413] text-black w-8 h-8 rounded-full border-2 border-background-dark flex items-center justify-center cursor-pointer shadow-lg active:scale-90 transition-transform hover:scale-110"
+                            >
                                 <span className="material-icons text-[16px]">add</span>
                             </div>
                         )}
@@ -224,8 +232,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                 <div className="mt-1">
                     {activeTab === 'POSTS' && (
                         <div className="grid grid-cols-3 gap-0.5 animate-in fade-in duration-300">
-                            {MY_POSTS_MOCK.map(post => (
-                                <div key={post.id} className="aspect-square bg-white/5 relative group cursor-pointer overflow-hidden">
+                            {(isMyProfile ? profilePosts : MY_POSTS_MOCK).map(post => (
+                                <div key={post.id} onClick={() => setSelectedPost(post)} className="aspect-square bg-white/5 relative group cursor-pointer overflow-hidden">
                                     <img src={post.img} className="w-full h-full object-cover" alt="" />
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                                         <div className="flex items-center gap-1">
@@ -262,6 +270,127 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                     )}
                 </div>
             </div>
+
+            {/* Post Detail Overlay (Instagram style) */}
+            {selectedPost && (
+                <div className="fixed inset-0 z-[200] bg-background-dark flex flex-col animate-in slide-in-from-bottom duration-300">
+                    <header className="px-6 py-4 flex items-center justify-between border-b border-white/5 bg-background-dark/95 backdrop-blur-md sticky top-0 z-10">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => { setSelectedPost(null); setEditingPost(null); }} className="material-icons text-white">arrow_back</button>
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-[#ECA413]">Publicação</h3>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-tight">{profileData?.name}</p>
+                            </div>
+                        </div>
+                        {isMyProfile && (
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => {
+                                        if (editingPost === selectedPost.id) {
+                                            // Handle save simulation
+                                            setEditingPost(null);
+                                        } else {
+                                            setEditingPost(selectedPost.id);
+                                            setEditCaption(`Legenda do post ${selectedPost.id}`); // Simulate existing caption
+                                        }
+                                    }}
+                                    className="material-icons text-white/60 hover:text-white"
+                                >
+                                    {editingPost === selectedPost.id ? 'check' : 'edit'}
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if (confirm('Tem certeza que deseja apagar essa publicação permanentemente?')) {
+                                            setProfilePosts(profilePosts.filter(p => p.id !== selectedPost.id));
+                                            setSelectedPost(null);
+                                        }
+                                    }}
+                                    className="material-icons text-red-500/80 hover:text-red-500"
+                                >
+                                    delete
+                                </button>
+                            </div>
+                        )}
+                    </header>
+                    
+                    <div className="flex-1 overflow-y-auto pb-8">
+                        {/* User Header */}
+                        <div className="px-5 py-3 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full border border-[#ECA413] p-[1.5px]">
+                                <img className="w-full h-full object-cover rounded-full" src={profileData?.avatar_url} />
+                            </div>
+                            <div>
+                                <span className="font-black text-xs text-white uppercase tracking-tight flex items-center gap-1">
+                                    {profileData?.username} 
+                                    {profileData?.isVerified && <span className="material-icons text-[#ECA413] text-[12px]">verified</span>}
+                                </span>
+                                <span className="text-[9px] font-bold uppercase text-white/40">{profileData?.location}</span>
+                            </div>
+                        </div>
+
+                        {/* Image */}
+                        <div className="w-full aspect-square bg-black">
+                            <img src={selectedPost.img} className="w-full h-full object-contain" />
+                        </div>
+
+                        {/* Interaction Bar */}
+                        <div className="px-5 py-4 flex justify-between items-center bg-background-dark">
+                            <div className="flex gap-6 items-center">
+                                <button 
+                                    onClick={() => {
+                                        setLikedPosts(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(selectedPost.id)) next.delete(selectedPost.id);
+                                            else next.add(selectedPost.id);
+                                            return next;
+                                        });
+                                    }}
+                                    className="flex items-center gap-2 group active:scale-125 transition-transform"
+                                >
+                                    <span className={`material-icons text-[26px] ${likedPosts.has(selectedPost.id) ? 'text-red-500' : 'text-white'}`}>
+                                        {likedPosts.has(selectedPost.id) ? 'favorite' : 'favorite_border'}
+                                    </span>
+                                </button>
+                                <button className="flex items-center gap-2">
+                                    <span className="material-icons text-[24px] text-white">chat_bubble_outline</span>
+                                </button>
+                                <button className="flex items-center gap-2">
+                                    <span className="material-icons text-[24px] text-white">share</span>
+                                </button>
+                            </div>
+                            <button className="material-icons text-white/50">bookmark_border</button>
+                        </div>
+                        
+                        {/* Likes count & Caption */}
+                        <div className="px-5 space-y-2">
+                            <p className="font-black text-sm text-white">{selectedPost.likes + (likedPosts.has(selectedPost.id) ? 1 : 0)} curtidas</p>
+                            
+                            {editingPost === selectedPost.id ? (
+                                <div className="mt-2 text-white">
+                                    <textarea 
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:border-[#ECA413] outline-none transition-colors"
+                                        rows={3}
+                                        value={editCaption}
+                                        onChange={(e) => setEditCaption(e.target.value)}
+                                        placeholder="Nova legenda..."
+                                    />
+                                    <p className="text-[10px] text-white/30 uppercase mt-1">Modo de edição. Clique no ✓ acima para salvar.</p>
+                                </div>
+                            ) : (
+                                <p className="text-[13px] leading-snug">
+                                    <span className="font-black mr-2 text-white">{profileData?.username}</span>
+                                    <span className="text-white/80 font-medium">Lembrança incrível desse dia na arena! Preparação tá a mil por hora pro próximo circuito. 🐎🔥</span>
+                                </p>
+                            )}
+
+                            <button className="text-[11px] font-black opacity-40 text-white uppercase tracking-widest block py-1 mt-1">
+                                VER TODOS OS {selectedPost.comments} COMENTÁRIOS
+                            </button>
+                            <div className="text-[9px] font-black opacity-30 text-white uppercase tracking-[0.15em] pt-1">HÁ 2 DIAS</div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
