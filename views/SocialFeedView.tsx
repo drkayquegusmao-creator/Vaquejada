@@ -175,8 +175,11 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
 
       {/* Notifications Overlay */}
       {isNotificationsOpen && (
-        <div className="absolute top-[68px] right-4 w-[300px] z-50 bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 overflow-hidden">
-            <div className="p-4 border-b border-white/10">
+        <>
+            {/* Click Outside to Dismiss */}
+            <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)}></div>
+            <div className="absolute top-[68px] right-4 w-[300px] z-50 bg-neutral-900 border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-4 overflow-hidden">
+                <div className="p-4 border-b border-white/10">
                 <h3 className="font-black text-white tracking-widest text-[11px] uppercase">Ações & Notificações</h3>
             </div>
             <div className="max-h-[300px] overflow-y-auto">
@@ -201,6 +204,7 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                 ))}
             </div>
         </div>
+        </>
       )}
 
       {/* Stories Bar */}

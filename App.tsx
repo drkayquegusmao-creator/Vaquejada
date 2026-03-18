@@ -45,35 +45,72 @@ const App: React.FC = () => {
     setInitializing(false);
 
     const handleNav = (e: any) => {
-      if (e.detail?.view) {
-        setCurrentView(e.detail.view);
+      const view = e.detail?.view || currentView;
+      const username = e.detail?.username ?? null;
+      
+      setCurrentView(view);
+      if (username !== undefined) {
+          setProfileUsername(username);
       }
-      if (e.detail?.username !== undefined) {
-        setProfileUsername(e.detail.username);
-        if (e.detail.username) {
-            window.history.pushState({}, '', `/perfil/${e.detail.username}`);
-        } else if (e.detail.view === View.PROFILE) {
-            window.history.pushState({}, '', `/perfil`);
-        }
+
+      // Add to history
+      const stateObj = { view, username };
+      if (username) {
+          window.history.pushState(stateObj, '', `/perfil/${username}`);
+      } else if (view === View.PROFILE) {
+          window.history.pushState(stateObj, '', `/perfil`);
+      } else {
+          window.history.pushState(stateObj, '', `/`);
       }
     };
 
+    const handlePopState = (e: PopStateEvent) => {
+        if (e.state) {
+            setCurrentView(e.state.view);
+            setProfileUsername(e.state.username);
+        } else {
+            // Fallback parsing
+            const path = window.location.pathname;
+            if (path.startsWith('/perfil/')) {
+                const parts = path.split('/perfil/');
+                setProfileUsername(parts[1] || null);
+                setCurrentView(View.PROFILE);
+            } else if (path === '/perfil' || path === '/meu-perfil') {
+                setProfileUsername(null);
+                setCurrentView(View.PROFILE);
+            } else {
+                setCurrentView(View.SOCIAL); // default fallback
+            }
+        }
+    };
+
     window.addEventListener('arena_navigate', handleNav);
+    window.addEventListener('popstate', handlePopState);
     
-    // Also handle initial load path
+    // Also handle initial load path and save initial state
     const path = window.location.pathname;
+    let initialView = currentView;
+    let initialUser = null;
+
     if (path.startsWith('/perfil/')) {
         const parts = path.split('/perfil/');
         if (parts[1]) {
-            setProfileUsername(parts[1]);
-            setCurrentView(View.PROFILE);
+            initialUser = parts[1];
+            initialView = View.PROFILE;
         }
     } else if (path === '/perfil' || path === '/meu-perfil') {
-        setProfileUsername(null);
-        setCurrentView(View.PROFILE);
+        initialUser = null;
+        initialView = View.PROFILE;
     }
+    
+    setProfileUsername(initialUser);
+    setCurrentView(initialView);
+    window.history.replaceState({ view: initialView, username: initialUser }, '', path);
 
-    return () => window.removeEventListener('arena_navigate', handleNav);
+    return () => {
+        window.removeEventListener('arena_navigate', handleNav);
+        window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
 
   useEffect(() => {
