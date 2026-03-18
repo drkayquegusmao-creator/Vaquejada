@@ -8,8 +8,8 @@ interface LoginViewProps {
 }
 
 const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp, onForgotPassword }) => {
-  const [email, setEmail] = useState('kayquegusmao@icloud.com');
-  const [password, setPassword] = useState('kayque2009');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
