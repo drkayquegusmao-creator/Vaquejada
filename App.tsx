@@ -213,7 +213,7 @@ const App: React.FC = () => {
       case View.EVENTS:
         return <EventsView />;
       case View.SOCIAL:
-        return <SocialFeedView onMediaCreation={() => setCurrentView(View.MEDIA_CREATION)} />;
+        return <SocialFeedView user={user} onMediaCreation={() => setCurrentView(View.MEDIA_CREATION)} />;
       case View.MERCADO:
         return <MarketView />;
       case View.PROFILE:

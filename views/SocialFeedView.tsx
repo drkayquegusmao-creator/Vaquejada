@@ -42,10 +42,11 @@ const INITIAL_POSTS: PostItem[] = [
 ];
 
 interface SocialFeedViewProps {
+  user: any; // Using any to avoid strict type issues for now
   onMediaCreation: () => void;
 }
 
-const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
+const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }) => {
   const [feedPosts, setFeedPosts] = useState<PostItem[]>(() => {
     const locals = JSON.parse(localStorage.getItem('arena_local_feed') || '[]');
     // Map locals to PostItem format if needed
@@ -190,6 +191,17 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
         <div className="flex gap-4">
           <button onClick={onMediaCreation} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 active:scale-90 transition-transform">
             <span className="material-icons text-xl text-white">add_box</span>
+          </button>
+
+          <button 
+            onClick={() => navigateToProfile(user?.username || 'meu-perfil')}
+            className="w-8 h-8 rounded-full border border-[#ECA413] p-0.5 overflow-hidden active:scale-90 transition-transform"
+          >
+            <img 
+              src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`} 
+              className="w-full h-full rounded-full object-cover" 
+              alt="Profile"
+            />
           </button>
           
           <button className="relative" onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setHasUnreadNotifications(false); }}>
