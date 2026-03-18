@@ -46,7 +46,24 @@ interface SocialFeedViewProps {
 }
 
 const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
-  const [feedPosts, setFeedPosts] = useState<PostItem[]>(INITIAL_POSTS);
+  const [feedPosts, setFeedPosts] = useState<PostItem[]>(() => {
+    const locals = JSON.parse(localStorage.getItem('arena_local_feed') || '[]');
+    // Map locals to PostItem format if needed
+    const formattedLocals = locals.map((p: any) => ({
+      id: p.id,
+      userId: 'offline-user',
+      username: p.username || 'vaqueiro_local',
+      imageUrl: p.img,
+      likes: '0',
+      comments: 0,
+      caption: p.caption || '',
+      hashtags: [],
+      timeAgo: 'AGORA',
+      isVerified: false,
+      location: p.location || 'Brasil'
+    }));
+    return [...formattedLocals, ...INITIAL_POSTS];
+  });
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set(['1']));
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [storyProgress, setStoryProgress] = useState(0);

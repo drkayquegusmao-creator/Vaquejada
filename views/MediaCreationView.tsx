@@ -100,44 +100,71 @@ const MediaCreationView: React.FC<MediaCreationViewProps> = ({ user, onClose, on
             const fileName = `${user.id}/${Date.now()}.${capturedMedia.type === 'image' ? 'jpg' : 'mp4'}`;
             const bucket = capturedMedia.type === 'image' ? 'posts_media' : 'stories_media';
 
-            // 1. Upload to Storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from(bucket)
-                .upload(fileName, capturedMedia.blob);
+            let finalUrl = capturedMedia.url; // Default to local blob URL for mock
 
-            if (uploadError) throw uploadError;
+            try {
+                // 1. Upload to Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from(bucket)
+                    .upload(fileName, capturedMedia.blob);
 
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(fileName);
+                if (uploadError) throw uploadError;
 
-            // 2. Save to Database
-            if (mode === 'STORY') {
-                const { error: dbError } = await supabase
-                    .from('stories')
-                    .insert({
-                        user_id: user.id,
-                        media_url: publicUrl,
-                        media_type: capturedMedia.type,
-                        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-                    });
-                if (dbError) throw dbError;
-            } else {
-                const { error: dbError } = await supabase
-                    .from('posts')
-                    .insert({
-                        user_id: user.id,
-                        media_url: publicUrl,
-                        media_type: capturedMedia.type,
-                        caption,
-                        location,
-                        event_id: eventId || null
-                    });
-                if (dbError) throw dbError;
+                const { data: { publicUrl } } = supabase.storage
+                    .from(bucket)
+                    .getPublicUrl(fileName);
+                
+                finalUrl = publicUrl;
+
+                // 2. Save to Database
+                if (mode === 'STORY') {
+                    const { error: dbError } = await supabase
+                        .from('stories')
+                        .insert({
+                            user_id: user.id,
+                            media_url: publicUrl,
+                            media_type: capturedMedia.type,
+                            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                        });
+                    if (dbError) throw dbError;
+                } else {
+                    const { error: dbError } = await supabase
+                        .from('posts')
+                        .insert({
+                            user_id: user.id,
+                            media_url: publicUrl,
+                            media_type: capturedMedia.type,
+                            caption,
+                            location,
+                            event_id: eventId || null
+                        });
+                    if (dbError) throw dbError;
+                }
+            } catch (supaError) {
+                console.warn('Supabase not ready, saving locally:', supaError);
+                // Fallback: Save to LocalStorage for demo purposes
+                if (mode !== 'STORY') {
+                    const newLocalPost = {
+                        id: `local_${Date.now()}`,
+                        img: capturedMedia.url,
+                        likes: 0,
+                        comments: 0,
+                        caption: caption,
+                        username: user.username,
+                        location: location || 'Arena +Vaquejada'
+                    };
+                    const savedPosts = JSON.parse(localStorage.getItem('arena_user_posts') || '[]');
+                    localStorage.setItem('arena_user_posts', JSON.stringify([newLocalPost, ...savedPosts]));
+                    
+                    // Also save to a general feed cache
+                    const feedCache = JSON.parse(localStorage.getItem('arena_local_feed') || '[]');
+                    localStorage.setItem('arena_local_feed', JSON.stringify([newLocalPost, ...feedCache]));
+                }
             }
 
             onSuccess();
         } catch (err: any) {
+            console.error('Final publish error:', err);
             alert(`Erro ao publicar: ${err.message}`);
         } finally {
             setIsUploading(false);
