@@ -43,6 +43,18 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
     // Determines if the user is looking at their own profile
     const isMyProfile = !targetUsername || (user && user.username && targetUsername === user.username);
 
+    const handleShare = (post: any) => {
+        if (navigator.share) {
+            navigator.share({
+                title: `Post de ${profileData?.username} no +Vaquejada`,
+                text: post.caption || 'Foto na arena! 🐎',
+                url: window.location.href,
+            }).catch(err => console.error('Erro ao compartilhar', err));
+        } else {
+            alert(`Link do post copiado: ${window.location.href}`);
+        }
+    };
+
     useEffect(() => {
         // Simulate fetching profile data dynamically
         setLoading(true);
@@ -185,7 +197,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                             <button className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all">
                                 Editar Perfil
                             </button>
-                            <button className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all">
+                            <button 
+                                onClick={() => handleShare(profileData)} 
+                                className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all"
+                            >
                                 Compartilhar
                             </button>
                         </>
@@ -197,7 +212,10 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                             >
                                 {isFollowing ? 'Seguindo' : 'Seguir'}
                             </button>
-                            <button className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all">
+                            <button 
+                                onClick={() => window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'SOCIAL' } }))}
+                                className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all"
+                            >
                                 Mensagem
                             </button>
                         </>
@@ -354,7 +372,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                                 <button className="flex items-center gap-2">
                                     <span className="material-icons text-[24px] text-white">chat_bubble_outline</span>
                                 </button>
-                                <button className="flex items-center gap-2">
+                                <button onClick={() => handleShare(selectedPost)} className="flex items-center gap-2">
                                     <span className="material-icons text-[24px] text-white">share</span>
                                 </button>
                             </div>

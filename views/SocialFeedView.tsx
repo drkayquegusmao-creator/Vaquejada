@@ -51,6 +51,24 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
+  // DM State
+  const [isDMScreenOpen, setIsDMScreenOpen] = useState(false);
+  const [activeChatUser, setActiveChatUser] = useState<string | null>(null);
+  const [messages, setMessages] = useState<{sender: string, text: string, time: string}[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+
+  const handleShare = (post: PostItem) => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Post de ${post.username} no +Vaquejada`,
+        text: post.caption,
+        url: window.location.href,
+      }).catch(err => console.error('Erro ao compartilhar', err));
+    } else {
+      alert(`Link do post copiado: ${window.location.href}`);
+    }
+  };
+
   const navigateToProfile = (username: string) => {
     // format username by removing @
     const formatted = username.startsWith('@') ? username.substring(1) : username;
@@ -124,6 +142,10 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
           <button className="relative">
             <span className="material-icons text-2xl text-white">favorite_border</span>
             <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#ECA413] border-2 border-background-dark rounded-full"></span>
+          </button>
+          <button className="relative" onClick={() => setIsDMScreenOpen(true)}>
+            <span className="material-icons text-2xl text-white">send</span>
+            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 border-2 border-background-dark rounded-full flex items-center justify-center text-[6px] font-black text-white">2</span>
           </button>
         </div>
       </header>
@@ -230,8 +252,8 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                   <span className="material-icons text-[24px] text-white">chat_bubble_outline</span>
                   <span className="text-[14px] font-black text-white/90 tracking-tight">{post.comments}</span>
                 </button>
-                <button>
-                  <span className="material-icons text-[24px] text-white">share</span>
+                <button onClick={() => handleShare(post)}>
+                  <span className="material-icons text-[24px] text-white">send</span>
                 </button>
               </div>
 
@@ -344,8 +366,102 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
               />
             </div>
             <button className="material-icons text-white drop-shadow-md">favorite_border</button>
-            <button className="material-icons text-white drop-shadow-md">send</button>
+            <button className="material-icons text-white drop-shadow-md" onClick={() => handleShare(INITIAL_POSTS[0])}>send</button>
           </div>
+        </div>
+      )}
+
+      {/* Direct Messages Overlay */}
+      {isDMScreenOpen && (
+        <div className="fixed inset-0 z-[200] bg-background-dark flex flex-col animate-in slide-in-from-right duration-300">
+          <header className="px-6 py-4 flex items-center justify-between border-b border-white/5 bg-background-dark/95 backdrop-blur-md sticky top-0 z-10">
+            <div className="flex items-center gap-4">
+              <button onClick={() => { activeChatUser ? setActiveChatUser(null) : setIsDMScreenOpen(false); }} className="material-icons text-white">arrow_back</button>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                  {activeChatUser ? activeChatUser : 'MENSAGENS'}
+                </h3>
+                {activeChatUser && <p className="text-[10px] font-bold text-[#ECA413] uppercase tracking-tight">Visto por último: há 10 min</p>}
+              </div>
+            </div>
+            {!activeChatUser && (
+              <button className="material-icons text-white">edit_square</button>
+            )}
+          </header>
+
+          {!activeChatUser ? (
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4">
+                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center gap-2">
+                  <span className="material-icons text-white/40">search</span>
+                  <input type="text" placeholder="Buscar..." className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-white/40" />
+                </div>
+              </div>
+              <h4 className="px-6 py-2 text-[10px] font-black uppercase text-white/40 tracking-widest">Recentes</h4>
+              {['vitor_vaqueiro', 'ana_montaria', 'haras_nobre'].map(user => (
+                <div key={user} onClick={() => { setActiveChatUser(user); setMessages([{sender: user, text: 'Fala patrão, vai colar no circuito?', time: '10:30'}]); }} className="px-6 py-4 flex items-center gap-4 border-b border-white/5 active:bg-white/5 cursor-pointer transition-colors">
+                  <div className="w-14 h-14 rounded-full border border-white/10 overflow-hidden bg-neutral-800">
+                    <img src={`https://picsum.photos/seed/${user}/100`} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-sm text-white mb-0.5">{user}</p>
+                    <p className="text-xs font-medium text-white/60 truncate">Fala patrão, vai colar no circuito esse FDS?</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[10px] font-bold text-white/40">10:30</span>
+                    <div className="w-2 h-2 rounded-full bg-[#ECA413]"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col bg-neutral-900/50 relative">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex justify-center mb-6">
+                  <div className="bg-white/10 rounded-full px-3 py-1 text-[10px] font-bold text-white/60 uppercase">HOJE</div>
+                </div>
+                {messages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${msg.sender === 'me' ? 'bg-[#ECA413] text-black rounded-tr-sm' : 'bg-white/10 text-white rounded-tl-sm'}`}>
+                      <p className="font-medium text-[13px]">{msg.text}</p>
+                      <p className={`text-[9px] font-black uppercase mt-1 text-right ${msg.sender === 'me' ? 'text-black/60' : 'text-white/40'}`}>{msg.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 bg-background-dark border-t border-white/5 drop-shadow-2xl flex gap-2">
+                <div className="flex-1 bg-white/10 rounded-full flex items-center px-4 border border-white/10">
+                  <input 
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newMessage.trim()) {
+                        setMessages([...messages, { sender: 'me', text: newMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
+                        setNewMessage('');
+                      }
+                    }}
+                    placeholder="Mensagem..." 
+                    className="w-full bg-transparent text-sm py-3 outline-none font-medium placeholder:text-white/40"
+                  />
+                </div>
+                {newMessage.trim() ? (
+                  <button 
+                    onClick={() => {
+                      setMessages([...messages, { sender: 'me', text: newMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
+                      setNewMessage('');
+                    }}
+                    className="w-12 h-12 rounded-full bg-[#ECA413] flex items-center justify-center text-black shadow-lg"
+                  >
+                    <span className="material-icons text-[20px]">send</span>
+                  </button>
+                ) : (
+                  <button className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white/60">
+                    <span className="material-icons text-[20px]">mic</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
