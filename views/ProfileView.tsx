@@ -160,36 +160,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
         }, 600);
     }, [isMyProfile, targetUsername, user]);
 
-    if (!user) {
+    if (!profileData || loading) {
         return (
-            <div className="min-h-full bg-background-dark flex flex-col items-center justify-center p-8 text-center pb-32">
-                <span className="material-icons text-white/20 text-6xl mb-6 font-thin">lock_outline</span>
-                <h1 className="text-xl font-black text-white italic uppercase tracking-tighter mb-2 underline-offset-8">Acesso <span className="text-[#ECA413]">Restrito</span></h1>
-                <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-10 leading-snug max-w-[240px]">
-                    Siga o rastro e faça o login para ver seu perfil na Arena.
-                </p>
-                <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'LOGIN' } }))}
-                  className="bg-[#ECA413] text-black px-10 py-4 rounded-3xl font-black text-[10px] uppercase tracking-[0.15em] shadow-xl hover:scale-105 active:scale-95 transition-all"
-                >
-                  ENTRAR AGORA
-                </button>
-            </div>
-        );
-    }
-
-    if (loading || !profileData) {
-        return (
-            <div className="min-h-full bg-background-dark px-6 py-12 flex flex-col items-center">
-                <div className="w-24 h-24 rounded-full bg-white/5 animate-pulse mb-4"></div>
-                <div className="w-40 h-6 bg-white/5 animate-pulse rounded-md mb-2"></div>
-                <div className="w-24 h-4 bg-white/5 animate-pulse rounded-md mb-8"></div>
-                <div className="w-full flex justify-between gap-4 mb-8">
-                    <div className="w-20 h-10 bg-white/5 animate-pulse rounded-md"></div>
-                    <div className="w-20 h-10 bg-white/5 animate-pulse rounded-md"></div>
-                    <div className="w-20 h-10 bg-white/5 animate-pulse rounded-md"></div>
-                </div>
-                <div className="w-full h-32 bg-white/5 animate-pulse rounded-xl mb-4"></div>
+            <div className="min-h-full bg-background-dark px-6 py-24 flex flex-col items-center justify-center">
+                <div className="w-16 h-16 border-4 border-[#ECA413] border-t-transparent rounded-full animate-spin mb-6"></div>
+                <p className="text-white/40 font-black uppercase tracking-widest text-[10px]">Carregando Arena...</p>
             </div>
         );
     }

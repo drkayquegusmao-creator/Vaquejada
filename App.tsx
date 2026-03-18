@@ -153,14 +153,14 @@ const App: React.FC = () => {
           phone: profile.whatsapp,
           state_id: profile.state_id,
           city_id: profile.city_id,
-          type: 'common', // Default or from role
+          type: 'common',
           role: profile.role === 'ADMIN_MASTER' ? 'ADMIN' : 'USER',
           permissions: profile.can_add_event ? ['organize_event'] : [],
           trustLevel: 'normal',
           blocked: false,
+          username: profile.name.toLowerCase().replace(/\s+/g, ''),
           avatar_url: profile.avatar_url,
           bio: profile.bio,
-          username: profile.name?.toLowerCase().replace(/\s+/g, '_') || 'vaqueiro',
           createdAt: profile.created_at,
         };
         setUser(mappedUser);
@@ -194,7 +194,6 @@ const App: React.FC = () => {
         blocked: false,
         avatar_url: userData.avatar_url,
         bio: userData.bio,
-        username: userData.name?.toLowerCase().replace(/\s+/g, '_') || 'vaqueiro',
         createdAt: userData.created_at,
       };
       setUser(mappedUser);
@@ -264,7 +263,7 @@ const App: React.FC = () => {
     }
   };
 
-  const showNavbar = !!user && ![View.LOGIN, View.SIGNUP, View.FORGOT_PASSWORD].includes(currentView);
+  const showNavbar = ![View.LOGIN, View.SIGNUP, View.FORGOT_PASSWORD].includes(currentView);
 
   return (
     <div className="min-h-screen flex flex-col bg-background-dark overflow-hidden">
