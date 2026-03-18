@@ -34,14 +34,25 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
     const [activeTab, setActiveTab] = useState<TabType>('POSTS');
     const [profileData, setProfileData] = useState<any>(null);
     const [isFollowing, setIsFollowing] = useState(false);
+    
+    // Determines if the user is looking at their own profile
+    const isMyProfile = !targetUsername || (user && user.username && targetUsername === user.username);
+
     const [selectedPost, setSelectedPost] = useState<any>(null);
     const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-    const [profilePosts, setProfilePosts] = useState(MY_POSTS_MOCK);
+    const [profilePosts, setProfilePosts] = useState(() => {
+        const saved = localStorage.getItem('arena_user_posts');
+        return saved ? JSON.parse(saved) : MY_POSTS_MOCK;
+    });
     const [editingPost, setEditingPost] = useState<string | null>(null);
     const [editCaption, setEditCaption] = useState('');
 
-    // Determines if the user is looking at their own profile
-    const isMyProfile = !targetUsername || (user && user.username && targetUsername === user.username);
+    // Persist profilePosts
+    useEffect(() => {
+        if (isMyProfile) {
+            localStorage.setItem('arena_user_posts', JSON.stringify(profilePosts));
+        }
+    }, [profilePosts, isMyProfile]);
 
     // Persist Follow State locally
     useEffect(() => {
@@ -94,27 +105,28 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                     bio: user.bio || 'Bem-vindo ao meu perfil no +Vaquejada!',
                     location: `${user.city_id || 'Arena'}, ${user.state_id || '+VAQUEJADA'}`,
                     posts: profilePosts.length,
-                    followers: 452,
-                    following: 128,
-                    points: '1.2k',
+                    followers: Math.floor(Math.random() * 500) + 400,
+                    following: Math.floor(Math.random() * 200) + 100,
+                    points: `${(Math.random() * 2 + 1).toFixed(1)}k`,
                     ads: ADS_MOCK.length,
                     isVerified: user.type === 'admin' || user.role === 'ADMIN'
                 });
             } else {
                 // Mock public profile data based on targetUsername
+                const isVerified = targetUsername === 'joao_vaquejada' || targetUsername?.includes('vaqueiro');
                 setProfileData({
                     id: `public_${targetUsername}`,
                     name: targetUsername?.replace(/_/g, ' ').toUpperCase() || 'USUÁRIO NÃO ENCONTRADO',
                     username: targetUsername,
                     avatar_url: `https://picsum.photos/seed/${targetUsername}/200`,
                     bio: 'Competidor profissional do Circuito Nordestino. Apaixonado por cavalos e adrenalina.',
-                    location: 'PARQUE DAS PALMEIRAS, SE',
-                    posts: 45,
-                    followers: '10k',
-                    following: 340,
-                    points: '3.5k',
-                    ads: 1,
-                    isVerified: targetUsername === 'joao_vaquejada'
+                    location: 'ARENA NACIONAL, BR',
+                    posts: Math.floor(Math.random() * 50) + 10,
+                    followers: Math.floor(Math.random() * 5000) + 1000,
+                    following: Math.floor(Math.random() * 500) + 50,
+                    points: `${(Math.random() * 5 + 1).toFixed(1)}k`,
+                    ads: Math.floor(Math.random() * 3),
+                    isVerified: isVerified
                 });
             }
             setLoading(false);
@@ -239,7 +251,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                                 {isFollowing ? 'Seguindo' : 'Seguir'}
                             </button>
                             <button 
-                                onClick={() => window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'SOCIAL' } }))}
+                                onClick={() => window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'SOCIAL', openDM: profileData.username } }))}
                                 className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all"
                             >
                                 Mensagem
@@ -332,6 +344,11 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                                     onClick={() => {
                                         if (editingPost === selectedPost.id) {
                                             // Handle save simulation
+                                            const updatedPosts = profilePosts.map((p: any) => 
+                                                p.id === selectedPost.id ? { ...p, caption: editCaption } : p
+                                            );
+                                            setProfilePosts(updatedPosts);
+                                            setSelectedPost({...selectedPost, caption: editCaption});
                                             setEditingPost(null);
                                         } else {
                                             setEditingPost(selectedPost.id);
@@ -423,7 +440,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                             ) : (
                                 <p className="text-[13px] leading-snug">
                                     <span className="font-black mr-2 text-white">{profileData?.username}</span>
-                                    <span className="text-white/80 font-medium">Lembrança incrível desse dia na arena! Preparação tá a mil por hora pro próximo circuito. 🐎🔥</span>
+                                    <span className="text-white/80 font-medium">{selectedPost.caption || 'Lembrança incrível desse dia na arena! Preparação tá a mil por hora pro próximo circuito. 🐎🔥'}</span>
                                 </p>
                             )}
 

@@ -72,11 +72,25 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
   const [postComments, setPostComments] = useState<{username: string, text: string, time: string}[]>([]);
   
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+  const [hasUnreadDMs, setHasUnreadDMs] = useState(true);
   const [notificationsMock] = useState([
     { id: 1, type: 'follow', user: 'haras_nobre', text: 'começou a seguir você.', time: 'há 2m' },
     { id: 2, type: 'like', user: 'vitor_vaqueiro', text: 'curtiu sua publicação.', time: 'há 1h' },
     { id: 3, type: 'comment', user: 'ana_montaria', text: 'comentou: "Belo cavalo!"', time: 'há 5h' },
   ]);
+
+  // Logic to handle direct navigation to a chat
+  useEffect(() => {
+    const handleSocialNav = (e: any) => {
+        if (e.detail?.openDM) {
+            setIsDMScreenOpen(true);
+            setActiveChatUser(e.detail.openDM);
+        }
+    };
+    window.addEventListener('arena_navigate', handleSocialNav);
+    return () => window.removeEventListener('arena_navigate', handleSocialNav);
+  }, []);
 
   const handleShare = (post: PostItem) => {
     if (navigator.share) {
@@ -161,14 +175,18 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
             <span className="material-icons text-xl text-white">add_box</span>
           </button>
           
-          <button className="relative" onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}>
+          <button className="relative" onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setHasUnreadNotifications(false); }}>
             <span className={`material-icons text-2xl ${isNotificationsOpen ? 'text-[#ECA413]' : 'text-white'}`}>favorite_border</span>
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#ECA413] border-2 border-background-dark rounded-full"></span>
+            {hasUnreadNotifications && (
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#ECA413] border-2 border-background-dark rounded-full"></span>
+            )}
           </button>
 
-          <button className="relative" onClick={() => setIsDMScreenOpen(true)}>
+          <button className="relative" onClick={() => { setIsDMScreenOpen(true); setHasUnreadDMs(false); }}>
             <span className="material-icons text-2xl text-white">send</span>
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 border-2 border-background-dark rounded-full flex items-center justify-center text-[6px] font-black text-white">2</span>
+            {hasUnreadDMs && (
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#ECA413] border-2 border-background-dark rounded-full"></span>
+            )}
           </button>
         </div>
       </header>
@@ -552,7 +570,7 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ onMediaCreation }) => {
                 </div>
               </div>
               <h4 className="px-6 py-2 text-[10px] font-black uppercase text-white/40 tracking-widest">Recentes</h4>
-              {['vitor_vaqueiro', 'ana_montaria', 'haras_nobre'].map(user => {
+              {Array.from(new Set([...['vitor_vaqueiro', 'ana_montaria', 'haras_nobre'], ...messages.map(m => m.chatWith)])).map(user => {
                 const userMessages = messages.filter(m => m.chatWith === user);
                 const lastMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1] : {text: 'Tocar para conversar...', time: ''};
                 return (
