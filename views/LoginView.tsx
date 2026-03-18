@@ -100,6 +100,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp, onForgotPasswo
                 <span className="absolute left-5 top-1/2 -translate-y-1/2 material-icons text-white/20 group-focus-within:text-[#ECA413] transition-colors">alternate_email</span>
                 <input
                   type="email"
+                  autoComplete="off"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413] focus:bg-white/10 transition-all placeholder:text-white/10"
@@ -123,6 +124,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp, onForgotPasswo
                 <span className="absolute left-5 top-1/2 -translate-y-1/2 material-icons text-white/20 group-focus-within:text-[#ECA413] transition-colors">lock</span>
                 <input
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-12 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413] focus:bg-white/10 transition-all placeholder:text-white/10"

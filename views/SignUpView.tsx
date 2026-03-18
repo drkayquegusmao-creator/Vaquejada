@@ -146,7 +146,10 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onBack, onSuccess }) => {
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-[#ECA413] ml-2">E-mail</label>
                 <input
-                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  autoComplete="off"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413]"
                   placeholder="exemplo@email.com"
                 />
@@ -180,6 +183,7 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onBack, onSuccess }) => {
                 <div className="relative group">
                   <input
                     type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-12 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413]"
@@ -200,6 +204,7 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onBack, onSuccess }) => {
                 <div className="relative group">
                   <input
                     type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-12 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413]"
