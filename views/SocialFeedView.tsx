@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PostItem, StoryItem } from '../types';
 
-const stories: StoryItem[] = [
-  { id: '1', username: 'Seu Status', imageUrl: 'https://picsum.photos/seed/my/100', mediaUrl: 'https://picsum.photos/seed/my_story/1080/1920', mediaType: 'image', hasNew: false },
-  { id: '2', username: '@vitor_vaqueiro', imageUrl: 'https://picsum.photos/seed/vitor/100', mediaUrl: 'https://picsum.photos/seed/vitor_story/1080/1920', mediaType: 'image', hasNew: true },
-  { id: '3', username: '@parque_palmeira', imageUrl: 'https://picsum.photos/seed/parque/100', mediaUrl: 'https://picsum.photos/seed/parque_story/1080/1920', mediaType: 'image', hasNew: true },
-  { id: '4', username: '@ana_montaria', imageUrl: 'https://picsum.photos/seed/ana/100', mediaUrl: 'https://picsum.photos/seed/ana_story/1080/1920', mediaType: 'image', hasNew: false },
-  { id: '5', username: '@haras_nobre', imageUrl: 'https://picsum.photos/seed/haras/100', mediaUrl: 'https://picsum.photos/seed/haras_story/1080/1920', mediaType: 'image', hasNew: true },
+const STORY_GROUPS = [
+  { id: '1', username: 'Seu Status', avatar: 'https://picsum.photos/seed/my/100', items: [{ id: 's1-1', url: 'https://picsum.photos/seed/my_story/1080/1920', type: 'image' }], hasNew: false },
+  { id: '2', username: '@vitor_vaqueiro', avatar: 'https://picsum.photos/seed/vitor/100', items: [{ id: 's2-1', url: 'https://picsum.photos/seed/vitor_story/1080/1920', type: 'image' }, { id: 's2-2', url: 'https://picsum.photos/seed/horse_story_1/1080/1920', type: 'image' }], hasNew: true },
+  { id: '3', username: '@parque_palmeira', avatar: 'https://picsum.photos/seed/parque/100', items: [{ id: 's3-1', url: 'https://picsum.photos/seed/parque_story/1080/1920', type: 'image' }], hasNew: true },
+  { id: '4', username: '@ana_montaria', avatar: 'https://picsum.photos/seed/ana/100', items: [{ id: 's4-1', url: 'https://picsum.photos/seed/ana_story/1080/1920', type: 'image' }], hasNew: false },
+  { id: '5', username: '@haras_nobre', avatar: 'https://picsum.photos/seed/haras/100', items: [{ id: 's5-1', url: 'https://picsum.photos/seed/haras_story/1080/1920', type: 'image' }], hasNew: true },
 ];
 
 const INITIAL_POSTS: PostItem[] = [
@@ -66,7 +66,8 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
     return [...formattedLocals, ...INITIAL_POSTS];
   });
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set(['1']));
-  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
+  const [activeUserIndex, setActiveUserIndex] = useState<number | null>(null);
+  const [activeItemIndex, setActiveItemIndex] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
 
   // DM State
@@ -90,8 +91,12 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
   const [postComments, setPostComments] = useState<{username: string, text: string, time: string}[]>([]);
   
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
-  const [hasUnreadDMs, setHasUnreadDMs] = useState(true);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(() => {
+    return localStorage.getItem('arena_has_unread_notifs') === 'true';
+  });
+  const [hasUnreadDMs, setHasUnreadDMs] = useState(() => {
+    return localStorage.getItem('arena_has_unread_dms') === 'true';
+  });
   const [notifications, setNotifications] = useState<{ id: number, type: string, user: string, text: string, time: string, postId?: string }[]>(() => {
     const saved = localStorage.getItem('arena_notifications');
     return saved ? JSON.parse(saved) : [
@@ -110,6 +115,14 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
   useEffect(() => {
     localStorage.setItem('arena_notifications', JSON.stringify(notifications));
   }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('arena_has_unread_notifs', hasUnreadNotifications.toString());
+  }, [hasUnreadNotifications]);
+
+  useEffect(() => {
+    localStorage.setItem('arena_has_unread_dms', hasUnreadDMs.toString());
+  }, [hasUnreadDMs]);
 
   // Handle detection of @
   const handleCommentChange = (text: string) => {
@@ -193,7 +206,7 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (activeStoryIndex !== null) {
+    if (activeUserIndex !== null) {
       setStoryProgress(0);
       progressInterval.current = setInterval(() => {
         setStoryProgress(prev => {
@@ -208,25 +221,40 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
       if (progressInterval.current) clearInterval(progressInterval.current);
     }
     return () => { if (progressInterval.current) clearInterval(progressInterval.current); };
-  }, [activeStoryIndex]);
+  }, [activeUserIndex, activeItemIndex]);
 
   const handleNextStory = () => {
-    if (activeStoryIndex !== null) {
-      if (activeStoryIndex < stories.length - 1) {
-        setActiveStoryIndex(activeStoryIndex + 1);
-      } else {
-        setActiveStoryIndex(null);
-      }
+    if (activeUserIndex === null) return;
+
+    const currentUser = STORY_GROUPS[activeUserIndex];
+    if (activeItemIndex < currentUser.items.length - 1) {
+      // Proximo item do mesmo usuario
+      setActiveItemIndex(activeItemIndex + 1);
+    } else if (activeUserIndex < STORY_GROUPS.length - 1) {
+      // Proximo usuario
+      setActiveUserIndex(activeUserIndex + 1);
+      setActiveItemIndex(0);
+    } else {
+      // Fim de todos os stories
+      setActiveUserIndex(null);
+      setActiveItemIndex(0);
     }
   };
 
   const handlePrevStory = () => {
-    if (activeStoryIndex !== null) {
-      if (activeStoryIndex > 0) {
-        setActiveStoryIndex(activeStoryIndex - 1);
-      } else {
-        setActiveStoryIndex(null);
-      }
+    if (activeUserIndex === null) return;
+
+    if (activeItemIndex > 0) {
+      setActiveItemIndex(activeItemIndex - 1);
+    } else if (activeUserIndex > 0) {
+      // Usuario anterior (e vai para o ultimo item dele)
+      const prevUserIndex = activeUserIndex - 1;
+      setActiveUserIndex(prevUserIndex);
+      setActiveItemIndex(STORY_GROUPS[prevUserIndex].items.length - 1);
+    } else {
+      // Primeiro de tudo, fecha
+      setActiveUserIndex(null);
+      setActiveItemIndex(0);
     }
   };
 
@@ -318,8 +346,23 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
                             <p className="text-[#ECA413] text-[9px] font-black uppercase tracking-wider mt-1">{notif.time}</p>
                         </div>
                         {notif.type === 'follow' && (
-                            <button className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform">
-                                Seguir
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const follows = JSON.parse(localStorage.getItem('arena_follows') || '{}');
+                                    const isCurrentlyFollowing = !!follows[notif.user];
+                                    follows[notif.user] = !isCurrentlyFollowing;
+                                    localStorage.setItem('arena_follows', JSON.stringify(follows));
+                                    // Force re-render of notification panel
+                                    setNotifications([...notifications]);
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all ${
+                                    JSON.parse(localStorage.getItem('arena_follows') || '{}')[notif.user] 
+                                    ? 'bg-transparent border border-white/20 text-white/40' 
+                                    : 'bg-[#ECA413] text-black shadow-lg shadow-[#ECA413]/20'
+                                }`}
+                            >
+                                {JSON.parse(localStorage.getItem('arena_follows') || '{}')[notif.user] ? 'Seguindo' : 'Seguir'}
                             </button>
                         )}
                         {notif.postId && (
@@ -332,17 +375,16 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
         </>
       )}
 
-      {/* Stories Bar */}
       <div className="py-4 overflow-x-auto hide-scrollbar whitespace-nowrap border-b border-white/5">
         <div className="flex gap-4 px-6">
-          {stories.map((story, index) => (
+          {STORY_GROUPS.map((story, index) => (
             <div key={story.id} className="flex flex-col items-center gap-1.5 shrink-0">
               <div
-                onClick={() => story.id !== '1' ? setActiveStoryIndex(index) : onMediaCreation()}
+                onClick={() => story.id !== '1' ? (() => { setActiveUserIndex(index); setActiveItemIndex(0); })() : onMediaCreation()}
                 className={`relative w-[72px] h-[72px] rounded-full p-[2.5px] cursor-pointer active:scale-95 transition-transform ${story.hasNew ? 'bg-gradient-to-tr from-[#ECA413] via-[#8B4513] to-[#ECA413]' : 'bg-white/10'}`}
               >
                 <div className="w-full h-full rounded-full border-[3px] border-background-dark overflow-hidden bg-neutral-800">
-                  <img src={story.imageUrl} className="w-full h-full object-cover" alt={story.username} />
+                  <img src={story.avatar} className="w-full h-full object-cover" alt={story.username} />
                 </div>
                 {story.id === '1' && (
                   <div
@@ -596,16 +638,16 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
       )}
 
       {/* Story Viewer Overlay */}
-      {activeStoryIndex !== null && (
+      {activeUserIndex !== null && (
         <div className="absolute inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-300">
           {/* Progress Bars */}
           <div className="absolute top-4 left-0 right-0 px-2 flex gap-1 z-20">
-            {stories.map((_, i) => (
+            {STORY_GROUPS[activeUserIndex].items.map((_, i) => (
               <div key={i} className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-white transition-all duration-50 ease-linear"
                   style={{
-                    width: i < activeStoryIndex ? '100%' : (i === activeStoryIndex ? `${storyProgress}%` : '0%')
+                    width: i < activeItemIndex ? '100%' : (i === activeItemIndex ? `${storyProgress}%` : '0%')
                   }}
                 />
               </div>
@@ -616,25 +658,26 @@ const SocialFeedView: React.FC<SocialFeedViewProps> = ({ user, onMediaCreation }
           <div className="absolute top-8 left-0 right-0 px-4 flex justify-between items-center z-20">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full border border-white/20 p-0.5">
-                <img className="w-full h-full object-cover rounded-full" src={stories[activeStoryIndex].imageUrl} alt="" />
+                <img className="w-full h-full object-cover rounded-full" src={STORY_GROUPS[activeUserIndex].avatar} alt="" />
               </div>
               <span 
                   onClick={() => {
-                    setActiveStoryIndex(null);
-                    navigateToProfile(stories[activeStoryIndex].username);
+                    const username = STORY_GROUPS[activeUserIndex].username;
+                    setActiveUserIndex(null);
+                    navigateToProfile(username);
                   }}
                   className="text-white text-xs font-black uppercase tracking-widest drop-shadow-md cursor-pointer hover:underline"
                 >
-                {stories[activeStoryIndex].username}
+                {STORY_GROUPS[activeUserIndex].username}
               </span>
             </div>
-            <button onClick={() => setActiveStoryIndex(null)} className="material-icons text-white drop-shadow-md">close</button>
+            <button onClick={() => setActiveUserIndex(null)} className="material-icons text-white drop-shadow-md">close</button>
           </div>
 
           {/* Story Content */}
           <div className="flex-1 flex items-center justify-center bg-neutral-900">
             <img
-              src={stories[activeStoryIndex].mediaUrl}
+              src={STORY_GROUPS[activeUserIndex].items[activeItemIndex].url}
               className="w-full max-h-full object-contain"
               alt="Story content"
             />

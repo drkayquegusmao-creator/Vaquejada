@@ -183,7 +183,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
             {/* Header / Actions */}
             <div className="px-6 pt-10 pb-4 flex justify-between items-center sticky top-0 bg-background-dark/90 backdrop-blur-md z-10 border-b border-white/5">
                 <button
-                   onClick={() => window.history.back()}
+                   onClick={() => window.dispatchEvent(new CustomEvent('arena_navigate', { detail: { view: 'SOCIAL' } }))}
                    className="material-icons opacity-100 text-white transition-all hover:scale-110 active:scale-90"
                 >
                    arrow_back
