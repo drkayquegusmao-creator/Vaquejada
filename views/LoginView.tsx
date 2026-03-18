@@ -10,6 +10,7 @@ interface LoginViewProps {
 const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -121,12 +122,19 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSignUp, onForgotPasswo
               <div className="relative group">
                 <span className="absolute left-5 top-1/2 -translate-y-1/2 material-icons text-white/20 group-focus-within:text-[#ECA413] transition-colors">lock</span>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413] focus:bg-white/10 transition-all placeholder:text-white/10"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-12 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413] focus:bg-white/10 transition-all placeholder:text-white/10"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-[#ECA413] transition-colors"
+                >
+                  <span className="material-icons text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
               </div>
             </div>
 

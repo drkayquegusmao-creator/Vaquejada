@@ -130,7 +130,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (currentView !== View.LOGIN && currentView !== View.SIGNUP) {
+    if (currentView !== View.LOGIN && currentView !== View.SIGNUP && currentView !== View.FORGOT_PASSWORD) {
       sessionStorage.setItem('arena_last_view', currentView);
     }
   }, [currentView]);
@@ -262,7 +262,7 @@ const App: React.FC = () => {
     }
   };
 
-  const showNavbar = ![View.LOGIN, View.SIGNUP].includes(currentView);
+  const showNavbar = ![View.LOGIN, View.SIGNUP, View.FORGOT_PASSWORD].includes(currentView);
 
   return (
     <div className="min-h-screen flex flex-col bg-background-dark overflow-hidden">
