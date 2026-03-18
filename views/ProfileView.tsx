@@ -34,9 +34,26 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
     const [activeTab, setActiveTab] = useState<TabType>('POSTS');
     const [profileData, setProfileData] = useState<any>(null);
     const [isFollowing, setIsFollowing] = useState(false);
-    
+    const [editingPost, setEditingPost] = useState<string | null>(null);
+    const [editCaption, setEditCaption] = useState('');
+    const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
     // Determines if the user is looking at their own profile
     const isMyProfile = !targetUsername || (user && user.username && targetUsername === user.username);
+
+    // Persist profile stats locally for 'realness' in demo
+    const [stats, setStats] = useState(() => {
+        const saved = localStorage.getItem(`arena_stats_${targetUsername || 'me'}`);
+        if (saved) return JSON.parse(saved);
+        return {
+            followers: isMyProfile ? 509 : Math.floor(Math.random() * 5000) + 1000,
+            following: isMyProfile ? 131 : Math.floor(Math.random() * 500) + 50
+        };
+    });
+
+    useEffect(() => {
+        localStorage.setItem(`arena_stats_${targetUsername || 'me'}`, JSON.stringify(stats));
+    }, [stats, targetUsername]);
 
     const [selectedPost, setSelectedPost] = useState<any>(null);
     const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -44,8 +61,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
         const saved = localStorage.getItem('arena_user_posts');
         return saved ? JSON.parse(saved) : MY_POSTS_MOCK;
     });
-    const [editingPost, setEditingPost] = useState<string | null>(null);
-    const [editCaption, setEditCaption] = useState('');
 
     // Persist profilePosts
     useEffect(() => {
@@ -70,14 +85,26 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                 follows[targetUsername] = next;
                 localStorage.setItem('arena_follows', JSON.stringify(follows));
                 
-                // Update local profile count for immediate feedback
-                setProfileData((curr: any) => curr ? {
-                    ...curr, 
+                // Update stats
+                setStats((curr: any) => ({
+                    ...curr,
                     followers: curr.followers + (next ? 1 : -1)
-                } : curr);
+                }));
             }
             return next;
         });
+    };
+
+    const shareProfile = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: `Perfil de ${profileData?.name} no +Vaquejada`,
+                text: `Confira o perfil de @${profileData?.username} na Arena +Vaquejada! 🐎`,
+                url: window.location.href,
+            }).catch(err => console.error('Erro ao compartilhar', err));
+        } else {
+            alert(`Link do perfil copiado: ${window.location.href}`);
+        }
     };
 
     const handleShare = (post: any) => {
@@ -105,8 +132,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                     bio: user.bio || 'Bem-vindo ao meu perfil no +Vaquejada!',
                     location: `${user.city_id || 'Arena'}, ${user.state_id || '+VAQUEJADA'}`,
                     posts: profilePosts.length,
-                    followers: Math.floor(Math.random() * 500) + 400,
-                    following: Math.floor(Math.random() * 200) + 100,
+                    followers: stats.followers,
+                    following: stats.following,
                     points: `${(Math.random() * 2 + 1).toFixed(1)}k`,
                     ads: ADS_MOCK.length,
                     isVerified: user.type === 'admin' || user.role === 'ADMIN'
@@ -122,8 +149,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                     bio: 'Competidor profissional do Circuito Nordestino. Apaixonado por cavalos e adrenalina.',
                     location: 'ARENA NACIONAL, BR',
                     posts: Math.floor(Math.random() * 50) + 10,
-                    followers: Math.floor(Math.random() * 5000) + 1000,
-                    following: Math.floor(Math.random() * 500) + 50,
+                    followers: stats.followers,
+                    following: stats.following,
                     points: `${(Math.random() * 5 + 1).toFixed(1)}k`,
                     ads: Math.floor(Math.random() * 3),
                     isVerified: isVerified
@@ -232,11 +259,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                 <div className="flex gap-2 w-full mb-8">
                     {isMyProfile ? (
                         <>
-                            <button className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all">
+                            <button 
+                                onClick={() => setIsEditProfileOpen(true)}
+                                className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all"
+                            >
                                 Editar Perfil
                             </button>
                             <button 
-                                onClick={() => handleShare(profileData)} 
+                                onClick={shareProfile} 
                                 className="flex-1 bg-white/10 text-white py-2.5 rounded-lg font-black text-[11px] uppercase tracking-wider flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all"
                             >
                                 Compartilhar
@@ -448,6 +478,65 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, targetUsername, onLogou
                                 VER TODOS OS {selectedPost.comments} COMENTÁRIOS
                             </button>
                             <div className="text-[9px] font-black opacity-30 text-white uppercase tracking-[0.15em] pt-1">HÁ 2 DIAS</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Edit Profile Overlay */}
+            {isEditProfileOpen && (
+                <div className="fixed inset-0 z-[300] bg-background-dark flex flex-col animate-in slide-in-from-bottom duration-300">
+                    <header className="px-6 py-4 flex items-center justify-between border-b border-white/5 bg-background-dark/95 backdrop-blur-md sticky top-0 z-10">
+                        <button onClick={() => setIsEditProfileOpen(false)} className="text-sm font-bold text-white/60">Cancelar</button>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-white">Editar Perfil</h3>
+                        <button 
+                            onClick={() => {
+                                // In a real app, this would hit the API
+                                // For now, handle via local profileData update
+                                setIsEditProfileOpen(false);
+                            }}
+                            className="text-sm font-black text-[#ECA413]"
+                        >
+                            Concluir
+                        </button>
+                    </header>
+                    
+                    <div className="p-8 flex flex-col items-center gap-6">
+                        <div className="w-24 h-24 rounded-full border-2 border-[#ECA413] p-1 overflow-hidden relative group">
+                            <img src={profileData.avatar_url || `https://ui-avatars.com/api/?name=${profileData.name}&background=random`} className="w-full h-full rounded-full object-cover opacity-50" />
+                            <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                                <span className="material-icons text-white text-3xl">camera_alt</span>
+                            </div>
+                        </div>
+                        <button className="text-[#ECA413] font-black text-xs uppercase tracking-widest">Alterar foto do perfil</button>
+                    </div>
+
+                    <div className="px-6 space-y-6">
+                        <div className="border-b border-white/10 pb-2">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1 mb-1 block">Nome</label>
+                            <input 
+                                type="text"
+                                value={profileData.name}
+                                onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                                className="bg-transparent w-full text-white text-sm outline-none px-1"
+                            />
+                        </div>
+                        <div className="border-b border-white/10 pb-2">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1 mb-1 block">Username</label>
+                            <input 
+                                type="text"
+                                value={profileData.username}
+                                onChange={(e) => setProfileData({...profileData, username: e.target.value})}
+                                className="bg-transparent w-full text-white text-sm outline-none px-1"
+                            />
+                        </div>
+                        <div className="border-b border-white/10 pb-2">
+                            <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1 mb-1 block">Bio</label>
+                            <textarea 
+                                value={profileData.bio}
+                                onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                                className="bg-transparent w-full text-white text-sm outline-none px-1 resize-none"
+                                rows={3}
+                            />
                         </div>
                     </div>
                 </div>
