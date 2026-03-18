@@ -9,6 +9,9 @@ interface ForgotPasswordViewProps {
 const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onBack }) => {
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isResetStep, setIsResetStep] = useState(false);
@@ -43,6 +46,11 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onBack }) => {
     e.preventDefault();
     if (newPassword.length < 6) {
       setMessage({ type: 'error', text: 'A senha deve ter pelo menos 6 caracteres.' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: 'As senhas não coincidem.' });
       return;
     }
 
@@ -120,14 +128,44 @@ const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onBack }) => {
               <form onSubmit={handleUpdatePassword} className="space-y-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#ECA413] ml-2">Nova Senha</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413]"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative group">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-6 pr-12 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413]"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-[#ECA413]"
+                    >
+                      <span className="material-icons text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#ECA413] ml-2">Confirmar Nova Senha</label>
+                  <div className="relative group">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-6 pr-12 text-sm font-bold text-white focus:outline-none focus:border-[#ECA413]"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-[#ECA413]"
+                    >
+                      <span className="material-icons text-lg">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  </div>
                 </div>
                 <button
                   disabled={loading}
